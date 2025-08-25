@@ -415,6 +415,7 @@
 			checkBox_KeyMapping.Appearance = Appearance.Button;
 			checkBox_KeyMapping.AutoSize = true;
 			checkBox_KeyMapping.Dock = DockStyle.Fill;
+			checkBox_KeyMapping.Enabled = false;
 			checkBox_KeyMapping.Location = new Point(0, 0);
 			checkBox_KeyMapping.Name = "checkBox_KeyMapping";
 			checkBox_KeyMapping.Size = new Size(169, 77);

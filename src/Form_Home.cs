@@ -59,10 +59,10 @@ namespace MOGI
 		{
 			_taskManager = Task_Manager.Instance;
 			_inputManager = Input_Manager.Instance;
-			_hotkeyManager = new HotkeyManager();
+			//_hotkeyManager = new HotkeyManager();
 
 			Initialize_UI();
-			Initialize_HotKey();
+			//Initialize_HotKey();
 
 
 
