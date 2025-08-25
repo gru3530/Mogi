@@ -13,7 +13,7 @@ namespace MOGI
 			TaskType = TaskType.Harvest;
 			TaskName = TaskNames[TaskType.Harvest];
 			EstimatedDurationSeconds = 5;
-			DelayTimeAfterRepetition = TimeSpan.FromSeconds(10 * 10);
+			DelayTimeAfterRepetition = TimeSpan.FromSeconds(10 * 7);
 
 			_selectedCropType = selectedCropType;
 		}

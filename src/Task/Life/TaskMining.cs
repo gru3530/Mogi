@@ -8,12 +8,12 @@ namespace MOGI
 	{
 		private MineralType _selectedCropType;
 
-		public TaskMining(MineralType selectedCropType = MineralType.WhiteCopper) : base()
+		public TaskMining(MineralType selectedCropType = MineralType.Ore) : base()
 		{
 			TaskType = TaskType.Mining;
 			TaskName = TaskNames[TaskType.Mining];
 			EstimatedDurationSeconds = 5;
-			DelayTimeAfterRepetition = TimeSpan.FromSeconds(7 * 10);
+			DelayTimeAfterRepetition = TimeSpan.FromSeconds(8 * 10);
 
 			_selectedCropType = selectedCropType;
 		}

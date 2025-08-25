@@ -16,18 +16,17 @@ namespace MOGI
 		public static readonly double ScrollDragDurationSeconds = 0.5;
 		public static readonly int ScrollPostDelayMinMs = 500;
 		public static readonly int ScrollPostDelayMaxMs = 1000;
-		public static readonly int StartX = 1060;
+		public static readonly int StartX = 1100;
 		public static readonly int StartY = 520;
-		public static readonly int height = 130;
-		public static readonly int width = 740;
-		public static readonly int paddingY = 25;
+		public static readonly int height = 95;
+		public static readonly int width = 650;
 
 		private static readonly Dictionary<int, Rectangle> _defaultSlotAreas = new Dictionary<int, Rectangle>
 		{
-			{ 0, new Rectangle(StartX, StartY, width, height) },
-			{ 1, new Rectangle(1060, StartY + (height * 1) + paddingY, width, height) },
-			{ 2, new Rectangle(1060, StartY + (height * 2) + paddingY, width, height) },
-			{ 3, new Rectangle(1060, StartY + (height * 3) + paddingY, width, height) }
+			{ 0, new Rectangle(StartX, 530, width, height) },
+			{ 1, new Rectangle(StartX, 680, width, height) },
+			{ 2, new Rectangle(StartX, 820, width, height) },
+			{ 3, new Rectangle(StartX, 960, width, height) }
 		};
 
 		public static IReadOnlyDictionary<int, Rectangle> DefaultSlotAreas => _defaultSlotAreas;
@@ -36,13 +35,13 @@ namespace MOGI
 		{
 			RegisterAreaMap(new Dictionary<AreaType, Rectangle>
 			{
-				{ AreaType.ProfileClick, new Rectangle(20, 18, 90, 90) }, 
+				{ AreaType.ProfileClick, new Rectangle(30, 30, 90, 90) }, 
                 { AreaType.LifeSkill, new Rectangle(974, 34, 100, 50) },     
-                { AreaType.Wood, new Rectangle(360, 159, 150, 250) },
-				{ AreaType.Mining, new Rectangle(570, 159, 150, 250) },
-				{ AreaType.Harvest, new Rectangle(1186, 159, 150, 250) },
-				{ AreaType.Hoeing, new Rectangle(1380, 159, 150, 250) },
-				{ AreaType.LocationMove, new Rectangle(680, 600, 180, 25) },
+                { AreaType.Wood, new Rectangle(370, 159, 150, 240) },
+				{ AreaType.Mining, new Rectangle(580, 159, 150, 240) },
+				{ AreaType.Harvest, new Rectangle(1190, 159, 150, 240) },
+				{ AreaType.Hoeing, new Rectangle(1400, 157, 150, 240) },
+				{ AreaType.LocationMove, new Rectangle(690, 600, 170, 25) },
 				{ AreaType.Skip, new Rectangle(1700, 35, 150, 40) },
 				{ AreaType.Open, new Rectangle(1064, 960, 150, 60) },
 			});
@@ -65,7 +64,7 @@ namespace MOGI
 			RegisterAreaMap(new Dictionary<WoodType, Rectangle>
 			{
 				{ WoodType.Normal, _defaultSlotAreas[0] },
-                { WoodType.Pointed, _defaultSlotAreas[1] }, 
+                { WoodType.Pointed, _defaultSlotAreas[1] },
                 { WoodType.Thick, _defaultSlotAreas[2] },
                 { WoodType.Usable, _defaultSlotAreas[3] }
             });
@@ -80,17 +79,17 @@ namespace MOGI
 
 			RegisterAreaMap(new Dictionary<HerbType, Rectangle>
 			{
-				{ HerbType.Base, _defaultSlotAreas[0] },   // HerbType.BaseHerb -> HerbType.Base
-                { HerbType.Bloody, _defaultSlotAreas[1] }, // HerbType.BloodyHerb -> HerbType.Bloody
-                { HerbType.Mana, _defaultSlotAreas[2] }     // HerbType.ManaHerb -> HerbType.Mana
+				{ HerbType.Base, _defaultSlotAreas[0] },
+                { HerbType.Bloody, _defaultSlotAreas[1] },
+                { HerbType.Mana, _defaultSlotAreas[2] }
             });
 
 			RegisterAreaMap(new Dictionary<InsectType, Rectangle>
 			{
-				{ InsectType.Light, _defaultSlotAreas[0] },      // InsectType.LightSwarm -> InsectType.Light
-                { InsectType.SnowfieldLight, _defaultSlotAreas[1] }, // InsectType.SnowfieldLightSwarm -> InsectType.SnowfieldLight
-                { InsectType.Insect, _defaultSlotAreas[2] },    // InsectType.InsectSwarm -> InsectType.Insect
-                { InsectType.Quiet, _defaultSlotAreas[3] }       // InsectType.QuietSwarm -> InsectType.Quiet
+				{ InsectType.Light, _defaultSlotAreas[0] },
+                { InsectType.SnowfieldLight, _defaultSlotAreas[1] },
+                { InsectType.Insect, _defaultSlotAreas[2] },
+                { InsectType.Quiet, _defaultSlotAreas[3] }
             });
 
 			RegisterKeyMaps();

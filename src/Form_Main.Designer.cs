@@ -66,6 +66,7 @@
 			// button_Home
 			// 
 			button_Home.Dock = DockStyle.Fill;
+			button_Home.Enabled = false;
 			button_Home.Location = new Point(3, 594);
 			button_Home.Name = "button_Home";
 			button_Home.Size = new Size(194, 34);
@@ -76,6 +77,7 @@
 			// button_Auto
 			// 
 			button_Auto.Dock = DockStyle.Fill;
+			button_Auto.Enabled = false;
 			button_Auto.Location = new Point(203, 594);
 			button_Auto.Name = "button_Auto";
 			button_Auto.Size = new Size(194, 34);

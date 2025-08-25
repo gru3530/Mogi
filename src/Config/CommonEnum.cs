@@ -35,9 +35,9 @@ public enum MineralType
 	[Description("철광")] Iron,
 	[Description("얼음")] Ice,
 	[Description("석탄")] Coal,
-	[Description("동광")] Copper,
-	[Description("백동광")] WhiteCopper,
-	[Description("은광")] Silver
+	//[Description("동광")] Copper,
+	//[Description("백동광")] WhiteCopper,
+	//[Description("은광")] Silver
 }
 
 public enum WoodType

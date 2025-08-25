@@ -18,13 +18,13 @@ namespace MOGI
 		public HotkeyManager()
 		{
 			// HotkeyWindow 내부에서 이벤트가 발생하면 HotkeyManager의 이벤트를 호출
-			_window.HotkeyFired += (keyId) =>
-			{
-				if (_idToKeyMap.TryGetValue(keyId, out Keys key))
-				{
-					HotkeyFired?.Invoke(key);
-				}
-			};
+			//_window.HotkeyFired += (keyId) =>
+			//{
+			//	if (_idToKeyMap.TryGetValue(keyId, out Keys key))
+			//	{
+			//		HotkeyFired?.Invoke(key);
+			//	}
+			//};
 		}
 
 		public void RegisterHotkey(Keys key)
