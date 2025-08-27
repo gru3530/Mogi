@@ -31,6 +31,20 @@ namespace MOGI
 
 		public static IReadOnlyDictionary<int, Rectangle> DefaultSlotAreas => _defaultSlotAreas;
 
+		private static readonly Dictionary<Enum, Rectangle> _itemSpecificAreas = new Dictionary<Enum, Rectangle>
+		{
+            { WoodType.Normal, new Rectangle(697, 565, 170, 25) },
+			{ WoodType.Pointed, new Rectangle(697, 565, 170, 25) },
+			{ WoodType.Thick, new Rectangle(697, 565, 170, 25) },
+			{ WoodType.Usable, new Rectangle(690, 620, 170, 25) },
+
+			//얼음 필요없음
+			{ MineralType.Ore, new Rectangle(690, 620, 170, 25) },
+			{ MineralType.Coal, new Rectangle(690, 620, 170, 25) },
+			{ MineralType.Iron, new Rectangle(690, 620, 170, 25) },
+		};
+
+
 		static CommonArea()
 		{
 			RegisterAreaMap(new Dictionary<AreaType, Rectangle>
@@ -134,6 +148,16 @@ namespace MOGI
 			}
 			throw new ArgumentException($"Unsupported enum type or map not registered: {typeof(TEnum).Name}");
 		}
+		public static Rectangle GetLocationMove<TEnum>(TEnum itemType) where TEnum : Enum
+		{
+			if (_itemSpecificAreas.TryGetValue(itemType, out Rectangle specificRect))
+			{
+				return specificRect;
+			}
+
+			return GetArea(AreaType.LocationMove);
+		}
+
 
 		public static Rectangle GetScrollableItemArea<TItemEnum>(TItemEnum typeToFindEnum, TItemEnum[] allPossibleEnums) where TItemEnum : Enum
 		{
