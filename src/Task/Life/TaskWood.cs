@@ -27,7 +27,7 @@ namespace MOGI
 
 			await PerformClickSequence(GetArea(AreaType.Wood));
 			await PerformClickSequence(GetArea(_selectedCropType));
-			await PerformClickSequence(GetArea(AreaType.LocationMove));
+			await PerformClickSequence(GetLocationMove(_selectedCropType));
 		}
 	}
 }

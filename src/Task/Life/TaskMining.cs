@@ -27,7 +27,7 @@ namespace MOGI
 			await PerformClickSequence(GetArea(AreaType.Mining));
 			//await SelectScrollableItem(_selectedCropType, (MineralType[])Enum.GetValues(typeof(MineralType)));
 			await PerformClickSequence(GetArea(_selectedCropType));
-			await PerformClickSequence(GetArea(AreaType.LocationMove));
+			await PerformClickSequence(GetLocationMove(_selectedCropType));
 		}
 	}
 }
