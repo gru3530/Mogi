@@ -26,7 +26,7 @@ namespace MOGI
 			await PerformClickSequence(GetArea(AreaType.LifeSkill));
 			await PerformClickSequence(GetArea(AreaType.Hoeing));
 			await PerformClickSequence(GetArea(_selectedCropType));
-			await PerformClickSequence(GetArea(AreaType.LocationMove));
+			await PerformClickSequence(GetLocationMove(_selectedCropType));
 		}
 	}
 }
