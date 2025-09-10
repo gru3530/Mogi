@@ -10,11 +10,11 @@ namespace MOGI
 		public enum TaskType
 		{
 			None,
+			[Description("나무베기")] Woodcutting,
+			[Description("광석캐기")] Mining,
+			[Description("약초채집")] HerbGathering,
 			[Description("추수")] Harvest,
 			[Description("호미질")] Hoeing,
-			[Description("약초채집")] HerbGathering,
-			[Description("광석캐기")] Mining,
-			[Description("나무베기")] Woodcutting,
 			[Description("곤충채집")] InsectGathering
 		}
 
@@ -31,11 +31,11 @@ namespace MOGI
 
 		public enum LifeActivityType
 		{
+			[Description("나무베기")] Woodcutting = TaskType.Woodcutting,
+			[Description("광석캐기")] Mining = TaskType.Mining,
+			[Description("약초채집")] HerbGathering = TaskType.HerbGathering,
 			[Description("추수")] Harvest = TaskType.Harvest,
 			[Description("호미질")] Hoeing = TaskType.Hoeing,
-			[Description("약초채집")] HerbGathering = TaskType.HerbGathering,
-			[Description("광석캐기")] Mining = TaskType.Mining,
-			[Description("나무베기")] Woodcutting = TaskType.Woodcutting,
 			[Description("곤충채집")] InsectGathering = TaskType.InsectGathering
 		}
 

@@ -1,31 +1,29 @@
-﻿using System;
-using System.Drawing;
-using System.Windows.Forms;
-using MOGI; // MOGI 네임스페이스
-using static MOGI.CommonArea;
-using static MOGI.TaskDefinition; // TaskDefinition.GetEnumDescription 사용을 위해 필요
+﻿using System.Threading.Tasks;
+using static MOGI.TaskDefinition;
 
 namespace MOGI
 {
 	public partial class Form_Home : Form
 	{
-		// 미리 생성해 둘 콘텐츠 폼들
 		private Form_Harvest _formHarvest;
 		private Form_Hoeing _formHoeing;
 		private Form_Mining _formMining;
 		private Form_Wood _formWood;
-		// private Form_HerbGathering _formHerbGathering;
-		// private Form_InsectGathering _formInsectGathering;
+		private Form_Herb _formHerb;
+		private Form_Insect _formInsect;
 
+		private Dictionary<TaskType, Form> _lifeSkillForms;
+		private Dictionary<TaskType, Func<Enum, BaseAutomationTask>> _taskFactory;
 
 		private Task_Manager _taskManager;
 		private Input_Manager _inputManager;
 		private HotkeyManager _hotkeyManager;
 		private int _monitorXOffset = 0;
 
-		// --- 새로 추가: 현재 선택된 생활 활동 타입과 세부 항목 ---
-		private TaskType _selectedLifeActivityType = TaskType.None; // 추수, 호미질 등 (TaskType 캐스팅)
-		private Enum? _selectedDetailItem = null; // 선택된 세부 항목 (CropType, HoeingType 등)
+		private TaskType _selectedLifeActivityType = TaskType.None; 
+		private Enum? _selectedDetailItem = null;
+
+
 
 		public Form_Home()
 		{
@@ -34,26 +32,11 @@ namespace MOGI
 			Initialize();
 			DetectMonitorsAndSetRadioButtons();
 
-			_formHarvest = new Form_Harvest();
-			_formHoeing = new Form_Hoeing();
-			_formMining = new Form_Mining();
-			_formWood = new Form_Wood();
-
-			_formHarvest.ItemSelected += FormHarvest_ItemSelectedHandler;
-			_formHoeing.ItemSelected += FormHoeing_ItemSelectedHandler;
-			_formMining.ItemSelected += FormMining_ItemSelectedHandler;
-			_formWood.ItemSelected += FormWood_ItemSelectedHandler;
-
-
-			AddFormToPanel(_formHarvest);
-			AddFormToPanel(_formHoeing);
-			AddFormToPanel(_formMining);
-			AddFormToPanel(_formWood);
-
-
-			ShowContentForm(_formHarvest);
-			_selectedLifeActivityType = TaskType.Harvest;
+			ShowContentForm(_formWood);
+			_selectedLifeActivityType = TaskType.Woodcutting;
 		}
+
+		
 
 		private void Initialize()
 		{
@@ -61,18 +44,112 @@ namespace MOGI
 			_inputManager = Input_Manager.Instance;
 			//_hotkeyManager = new HotkeyManager();
 
+			InitializeFormsAndEvents();
 			Initialize_UI();
+			InitializeTaskFactory();
+			InitializeLifeSkillButtons();
 			//Initialize_HotKey();
-
-
 
 			_taskManager.MousePositionChanged += TaskManager_MousePositionChanged;
 			_taskManager.CurrentTaskNameChanged += TaskManager_CurrentTaskNameChanged;
 			_taskManager.TaskProgressUpdated += TaskManager_TaskProgressUpdated;
 
-
 			UpdateTaskTimes(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, 0, 0);
 		}
+
+		private void InitializeFormsAndEvents()
+		{
+			_formHarvest = new Form_Harvest();
+			_formHoeing = new Form_Hoeing();
+			_formMining = new Form_Mining();
+			_formWood = new Form_Wood();
+			_formHerb = new Form_Herb();
+			_formInsect = new Form_Insect();
+
+			_lifeSkillForms = new Dictionary<TaskType, Form>
+			{
+				{ TaskType.Harvest, _formHarvest },
+				{ TaskType.Hoeing, _formHoeing },
+				{ TaskType.Mining, _formMining },
+				{ TaskType.Woodcutting, _formWood },
+				{ TaskType.HerbGathering, _formHerb },
+				{ TaskType.InsectGathering, _formInsect }
+			};
+
+			_formHarvest.ItemSelected += (s, e) => FormHome_ItemSelected(s, e);
+			_formHoeing.ItemSelected += (s, e) => FormHome_ItemSelected(s, e);
+			_formMining.ItemSelected += (s, e) => FormHome_ItemSelected(s, e);
+			_formWood.ItemSelected += (s, e) => FormHome_ItemSelected(s, e);
+			_formHerb.ItemSelected += (s, e) => FormHome_ItemSelected(s, e);
+			_formInsect.ItemSelected += (s, e) => FormHome_ItemSelected(s, e);
+
+			foreach (var form in _lifeSkillForms.Values)
+			{
+				AddFormToPanel(form);
+			}
+		}
+
+		private void InitializeTaskFactory()
+		{
+			_taskFactory = new Dictionary<TaskType, Func<Enum, BaseAutomationTask>>
+											{
+												{ TaskType.Harvest,       e => new TaskHarvest((CropType)e) },
+												{ TaskType.Hoeing,        e => new TaskHoeing((HoeingType)e) },
+												{ TaskType.Mining,        e => new TaskMining((MineralType)e) },
+												{ TaskType.Woodcutting,   e => new TaskWood((WoodType)e) },
+												{ TaskType.HerbGathering, e => new TaskHerb((HerbType)e) },
+												{ TaskType.InsectGathering, e => new TaskInsect((InsectType)e) }
+											};
+		}
+
+
+		private void InitializeLifeSkillButtons()
+		{
+			tableLayoutPanel1.AutoScroll = true;
+
+			tableLayoutPanel1.Controls.Clear();
+			tableLayoutPanel1.RowStyles.Clear();
+			tableLayoutPanel1.RowCount = 0;
+
+			var lifeSkillTypes = Enum.GetValues(typeof(LifeActivityType));
+
+			foreach (LifeActivityType skillType in lifeSkillTypes)
+			{
+				TaskType taskType = (TaskType)skillType;
+
+				tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
+
+				var button = new RadioButton
+				{
+					Text = GetEnumDescription(skillType),
+					Tag = taskType,
+					Appearance = Appearance.Button,
+					Dock = DockStyle.Fill,
+					TextAlign = ContentAlignment.MiddleCenter
+				};
+
+				button.CheckedChanged += LifeSkillButton_CheckedChanged;
+
+				tableLayoutPanel1.Controls.Add(button);
+				tableLayoutPanel1.RowCount++;
+			}
+		}
+
+		private void LifeSkillButton_CheckedChanged(object sender, EventArgs e)
+		{
+			var checkedRadio = sender as RadioButton;
+			if (checkedRadio != null && checkedRadio.Checked)
+			{
+				var selectedTaskType = (TaskType)checkedRadio.Tag;
+				_selectedLifeActivityType = selectedTaskType;
+
+				if (_lifeSkillForms.TryGetValue(selectedTaskType, out Form formToShow))
+				{
+					ShowContentForm(formToShow);
+				}
+			}
+		}
+
 
 		private void Initialize_HotKey()
 		{
@@ -86,7 +163,6 @@ namespace MOGI
 
 		private void Initialize_UI()
 		{
-
 			if (label_CurrentTask != null)
 			{
 				label_CurrentTask.Text = TaskDefinition.TaskNames[TaskType.None];
@@ -247,118 +323,31 @@ namespace MOGI
 			}
 		}
 
-		private void RadioButton_LifeContent_CheckedChanged(object sender, EventArgs e)
-		{
-			RadioButton? checkedRadio = sender as RadioButton;
-			if (checkedRadio != null && checkedRadio.Checked)
-			{
-				Form formToShow = null;
-				TaskType selectedLifeActivity = TaskType.None;
-
-				if (checkedRadio == radioButton_Harvest)
-				{
-					formToShow = _formHarvest;
-					selectedLifeActivity = TaskType.Harvest;
-				}
-				else if (checkedRadio == radioButton_Hoeing)
-				{
-					formToShow = _formHoeing;
-					selectedLifeActivity = TaskType.Hoeing;
-				}
-				else if (checkedRadio == radioButton_Mining)
-				{
-					formToShow = _formMining;
-					selectedLifeActivity = TaskType.Mining;
-				}
-				else if (checkedRadio == radioButton_Wood)
-				{
-					formToShow = _formWood;
-					selectedLifeActivity = TaskType.Woodcutting;
-				}
-
-				_selectedLifeActivityType = selectedLifeActivity;
-
-				if (formToShow != null)
-				{
-					ShowContentForm(formToShow);
-				}
-			}
-		}
-
-		private void FormHarvest_ItemSelectedHandler(object? sender, CropType selectedCropType)
-		{
-			FormHome_ItemSelected(sender, selectedCropType);
-		}
-		private void FormHoeing_ItemSelectedHandler(object? sender, HoeingType selectedHoeingType)
-		{
-			FormHome_ItemSelected(sender, selectedHoeingType);
-		}
-		private void FormMining_ItemSelectedHandler(object? sender, MineralType selectedMineralType)
-		{
-			FormHome_ItemSelected(sender, selectedMineralType);
-		}
-		private void FormWood_ItemSelectedHandler(object? sender, WoodType selectedWoodType)
-		{
-			FormHome_ItemSelected(sender, selectedWoodType);
-		}
-
 		private void FormHome_ItemSelected(object? sender, Enum selectedItem)
 		{
 			_selectedDetailItem = selectedItem;
-			// 메시지 박스는 이제 선택 사항
-			// MessageBox.Show($"{TaskDefinition.GetEnumDescription(_selectedLifeActivityType)} - {TaskDefinition.GetEnumDescription(_selectedDetailItem)} 선택됨!", "항목 선택", MessageBoxButtons.OK, MessageBoxIcon.Information);
 		}
 
 
-		private void button_Harvest_Click(object sender, EventArgs e)
+		private void Button_Start_Click(object sender, EventArgs e)
 		{
-			if (_selectedLifeActivityType == TaskType.None)
+			if (_selectedLifeActivityType == TaskType.None || _selectedDetailItem == null)
 			{
-				MessageBox.Show("생활 활동 타입을 먼저 선택해주세요.", "시작 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				MessageBox.Show("생활 활동과 세부 항목을 모두 선택해주세요.", "시작 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				return;
 			}
-			if (_selectedDetailItem == null)
-			{
-				MessageBox.Show("세부 항목을 먼저 선택해주세요.", "세부 항목 선택 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning); // 메시지 수정
-				return;
-			}
-
-			int repetitions = trackBar1.Value;
-			TaskConfig config = new TaskConfig(repetitions, false);
 
 			BaseAutomationTask taskToStart = null;
 
-			switch (_selectedLifeActivityType)
+			if (_taskFactory.TryGetValue(_selectedLifeActivityType, out var factoryFunc))
 			{
-				case TaskType.Harvest:
-					if (_selectedDetailItem is CropType selectedCrop)
-					{
-						taskToStart = new TaskHarvest(selectedCrop);
-					}
-					break;
-				case TaskType.Hoeing:
-					if (_selectedDetailItem is HoeingType selectedHoeing)
-					{
-						taskToStart = new TaskHoeing(selectedHoeing);
-					}
-					break;
-				case TaskType.Mining:
-					if (_selectedDetailItem is MineralType selectedMineral)
-					{
-						taskToStart = new TaskMining(selectedMineral);
-					}
-					break;
-				case TaskType.Woodcutting:
-					if (_selectedDetailItem is WoodType selectedWood)
-					{
-						taskToStart = new TaskWood(selectedWood);
-					}
-					break;
-					// 약초채집, 곤충채집 등 다른 TaskType에 대한 case 추가
+				taskToStart = factoryFunc(_selectedDetailItem);
 			}
 
 			if (taskToStart != null)
 			{
+				int repetitions = trackBar1.Value;
+				TaskConfig config = new TaskConfig(repetitions, false);
 				_taskManager.StartTask(taskToStart, config);
 			}
 			else

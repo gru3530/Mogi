@@ -7,10 +7,16 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>Notepad</AssemblyName>
-    <Version>0.0.3</Version>
+    <Version>0.0.5</Version>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Update="Form\Form_Insect.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form\Form_Herb.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Form\Form_Wood.cs">
       <SubType>Form</SubType>
     </Compile>
