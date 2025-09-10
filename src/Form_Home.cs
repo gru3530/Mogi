@@ -32,8 +32,8 @@ namespace MOGI
 			Initialize();
 			DetectMonitorsAndSetRadioButtons();
 
-			ShowContentForm(_formHarvest);
-			_selectedLifeActivityType = TaskType.Harvest;
+			ShowContentForm(_formWood);
+			_selectedLifeActivityType = TaskType.Woodcutting;
 		}
 
 		
