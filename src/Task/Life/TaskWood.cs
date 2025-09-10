@@ -1,33 +1,31 @@
-﻿
-using static MOGI.CommonArea;
+﻿using static MOGI.CommonArea;
 using static MOGI.TaskDefinition;
 
 namespace MOGI
 {
 	public class TaskWood : BaseAutomationTask
 	{
-		private WoodType _selectedCropType;
+		private readonly WoodType _selectedWoodType;
 
-		public TaskWood(WoodType selectedCropType = WoodType.Normal) : base()
+		public TaskWood(WoodType selectedWoodType) : base()
 		{
-			TaskType = TaskType.Harvest;
-			TaskName = TaskNames[TaskType.Harvest];
+			TaskType = TaskType.Woodcutting;
+			TaskName = TaskNames[TaskType.Woodcutting];
 			EstimatedDurationSeconds = 5;
-			DelayTimeAfterRepetition = TimeSpan.FromSeconds(10 * 7);
+			DelayTimeAfterRepetition = System.TimeSpan.FromSeconds(10 * 7);
 
-			_selectedCropType = selectedCropType;
+			_selectedWoodType = selectedWoodType;
 		}
 
 		protected override async Task ExecuteSingleRepetitionAsync()
 		{
 			UpdateCurrentTaskName(TaskType.Woodcutting);
 
-			await PerformClickSequence(GetArea(AreaType.ProfileClick));
-			await PerformClickSequence(GetArea(AreaType.LifeSkill));
-
-			await PerformClickSequence(GetArea(AreaType.Wood));
-			await PerformClickSequence(GetArea(_selectedCropType));
-			await PerformClickSequence(GetLocationMove(_selectedCropType));
+			await Click(AreaType.ProfileClick);
+			await Click(AreaType.LifeSkill);
+			await Click(AreaType.Wood);
+			await SelectItem(_selectedWoodType);
+			await Click(GetLocationMove(_selectedWoodType));
 		}
 	}
 }

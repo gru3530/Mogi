@@ -1,32 +1,31 @@
-﻿
-using static MOGI.CommonArea;
+﻿using static MOGI.CommonArea;
 using static MOGI.TaskDefinition;
 
 namespace MOGI
 {
 	public class TaskHoeing : BaseAutomationTask
 	{
-		private HoeingType _selectedCropType;
+		private readonly HoeingType _selectedHoeingType;
 
-		public TaskHoeing(HoeingType selectedCropType = HoeingType.Potato) : base()
+		public TaskHoeing(HoeingType selectedHoeingType) : base()
 		{
-			TaskType = TaskType.Harvest;
-			TaskName = TaskNames[TaskType.Harvest];
+			TaskType = TaskType.Hoeing;
+			TaskName = TaskNames[TaskType.Hoeing];
 			EstimatedDurationSeconds = 5;
-			DelayTimeAfterRepetition = TimeSpan.FromSeconds(10 * 8);
+			DelayTimeAfterRepetition = System.TimeSpan.FromSeconds(10 * 8);
 
-			_selectedCropType = selectedCropType;
+			_selectedHoeingType = selectedHoeingType;
 		}
 
 		protected override async Task ExecuteSingleRepetitionAsync()
 		{
 			UpdateCurrentTaskName(TaskType.Hoeing);
 
-			await PerformClickSequence(GetArea(AreaType.ProfileClick));
-			await PerformClickSequence(GetArea(AreaType.LifeSkill));
-			await PerformClickSequence(GetArea(AreaType.Hoeing));
-			await PerformClickSequence(GetArea(_selectedCropType));
-			await PerformClickSequence(GetLocationMove(_selectedCropType));
+			await Click(AreaType.ProfileClick);
+			await Click(AreaType.LifeSkill);
+			await Click(AreaType.Hoeing);
+			await SelectItem(_selectedHoeingType);
+			await Click(GetLocationMove(_selectedHoeingType));
 		}
 	}
 }
