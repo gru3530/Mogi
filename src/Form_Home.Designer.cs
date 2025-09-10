@@ -72,13 +72,13 @@
 			// 
 			// button_Harvest
 			// 
-			button_Harvest.Location = new Point(24, 352);
+			button_Harvest.Location = new Point(24, 364);
 			button_Harvest.Name = "button_Harvest";
 			button_Harvest.Size = new Size(199, 77);
 			button_Harvest.TabIndex = 13;
 			button_Harvest.Text = "시작";
 			button_Harvest.UseVisualStyleBackColor = true;
-			button_Harvest.Click += button_Harvest_Click;
+			button_Harvest.Click += Button_Start_Click;
 			// 
 			// label_CurrentTask
 			// 
@@ -266,7 +266,7 @@
 			// 
 			// button_Stop
 			// 
-			button_Stop.Location = new Point(244, 352);
+			button_Stop.Location = new Point(241, 364);
 			button_Stop.Name = "button_Stop";
 			button_Stop.Size = new Size(178, 77);
 			button_Stop.TabIndex = 25;
@@ -289,7 +289,7 @@
 			tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
 			tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
 			tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
-			tableLayoutPanel1.Size = new Size(112, 134);
+			tableLayoutPanel1.Size = new Size(134, 207);
 			tableLayoutPanel1.TabIndex = 26;
 			// 
 			// radioButton_Hoeing
@@ -297,14 +297,13 @@
 			radioButton_Hoeing.Appearance = Appearance.Button;
 			radioButton_Hoeing.AutoSize = true;
 			radioButton_Hoeing.Dock = DockStyle.Fill;
-			radioButton_Hoeing.Location = new Point(3, 102);
+			radioButton_Hoeing.Location = new Point(3, 156);
 			radioButton_Hoeing.Name = "radioButton_Hoeing";
-			radioButton_Hoeing.Size = new Size(106, 29);
+			radioButton_Hoeing.Size = new Size(128, 48);
 			radioButton_Hoeing.TabIndex = 28;
 			radioButton_Hoeing.Text = "호미질";
 			radioButton_Hoeing.TextAlign = ContentAlignment.MiddleCenter;
 			radioButton_Hoeing.UseVisualStyleBackColor = true;
-			radioButton_Hoeing.CheckedChanged += RadioButton_LifeContent_CheckedChanged;
 			// 
 			// radioButton_Wood
 			// 
@@ -313,26 +312,24 @@
 			radioButton_Wood.Dock = DockStyle.Fill;
 			radioButton_Wood.Location = new Point(3, 3);
 			radioButton_Wood.Name = "radioButton_Wood";
-			radioButton_Wood.Size = new Size(106, 27);
+			radioButton_Wood.Size = new Size(128, 45);
 			radioButton_Wood.TabIndex = 27;
 			radioButton_Wood.Text = "나무";
 			radioButton_Wood.TextAlign = ContentAlignment.MiddleCenter;
 			radioButton_Wood.UseVisualStyleBackColor = true;
-			radioButton_Wood.CheckedChanged += RadioButton_LifeContent_CheckedChanged;
 			// 
 			// radioButton_Mining
 			// 
 			radioButton_Mining.Appearance = Appearance.Button;
 			radioButton_Mining.AutoSize = true;
 			radioButton_Mining.Dock = DockStyle.Fill;
-			radioButton_Mining.Location = new Point(3, 36);
+			radioButton_Mining.Location = new Point(3, 54);
 			radioButton_Mining.Name = "radioButton_Mining";
-			radioButton_Mining.Size = new Size(106, 27);
+			radioButton_Mining.Size = new Size(128, 45);
 			radioButton_Mining.TabIndex = 27;
 			radioButton_Mining.Text = "광석";
 			radioButton_Mining.TextAlign = ContentAlignment.MiddleCenter;
 			radioButton_Mining.UseVisualStyleBackColor = true;
-			radioButton_Mining.CheckedChanged += RadioButton_LifeContent_CheckedChanged;
 			// 
 			// radioButton_Harvest
 			// 
@@ -340,21 +337,20 @@
 			radioButton_Harvest.AutoSize = true;
 			radioButton_Harvest.Checked = true;
 			radioButton_Harvest.Dock = DockStyle.Fill;
-			radioButton_Harvest.Location = new Point(3, 69);
+			radioButton_Harvest.Location = new Point(3, 105);
 			radioButton_Harvest.Name = "radioButton_Harvest";
-			radioButton_Harvest.Size = new Size(106, 27);
+			radioButton_Harvest.Size = new Size(128, 45);
 			radioButton_Harvest.TabIndex = 27;
 			radioButton_Harvest.TabStop = true;
 			radioButton_Harvest.Text = "추수";
 			radioButton_Harvest.TextAlign = ContentAlignment.MiddleCenter;
 			radioButton_Harvest.UseVisualStyleBackColor = true;
-			radioButton_Harvest.CheckedChanged += RadioButton_LifeContent_CheckedChanged;
 			// 
 			// panel_Life
 			// 
 			panel_Life.Location = new Point(392, 142);
 			panel_Life.Name = "panel_Life";
-			panel_Life.Size = new Size(129, 176);
+			panel_Life.Size = new Size(161, 204);
 			panel_Life.TabIndex = 27;
 			// 
 			// groupBox3
@@ -427,7 +423,7 @@
 			// panel1
 			// 
 			panel1.Controls.Add(checkBox_KeyMapping);
-			panel1.Location = new Point(467, 352);
+			panel1.Location = new Point(434, 364);
 			panel1.Name = "panel1";
 			panel1.Size = new Size(169, 77);
 			panel1.TabIndex = 30;

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.Linq;
+﻿using System.Runtime.InteropServices;
 
 namespace MOGI
 {
@@ -27,7 +21,6 @@ namespace MOGI
 			_monitorXOffset = offset;
 		}
 
-		#region P/Invoke
 		[DllImport("user32.dll", SetLastError = true)]
 		private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
@@ -80,14 +73,11 @@ namespace MOGI
 
 		private const uint INPUT_MOUSE = 0;
 		private const uint INPUT_KEYBOARD = 1;
-
 		private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
 		private const uint MOUSEEVENTF_LEFTUP = 0x0004;
 		private const uint MOUSEEVENTF_WHEEL = 0x0800;
-
 		private const uint KEYEVENTF_KEYDOWN = 0x0000;
 		private const uint KEYEVENTF_KEYUP = 0x0002;
-		#endregion
 
 		private double NextGaussian(double mean, double stdDev)
 		{
@@ -109,6 +99,23 @@ namespace MOGI
 			int x = _random.Next(box.Left, box.Right);
 			int y = _random.Next(box.Top, box.Bottom);
 			return new Point(x + _monitorXOffset, y);
+		}
+
+		public (Point Start, Point End) GetPreciseDragPoints(Rectangle startBox, Rectangle endBox)
+		{
+			int offsetX = _random.Next(-10, 11);
+			int offsetY = _random.Next(-5, 6);
+
+			Point startCenter = new Point((startBox.Left + startBox.Right) / 2, (startBox.Top + startBox.Bottom) / 2);
+			Point endCenter = new Point((endBox.Left + endBox.Right) / 2, (endBox.Top + endBox.Bottom) / 2);
+
+			Point startPoint = new Point(startCenter.X + offsetX, startCenter.Y + offsetY);
+			Point endPoint = new Point(endCenter.X + offsetX, endCenter.Y + offsetY);
+
+			startPoint.X += _monitorXOffset;
+			endPoint.X += _monitorXOffset;
+
+			return (startPoint, endPoint);
 		}
 
 		public async Task MoveMouseHumanLike(Point targetPosition, CancellationToken token, double durationSeconds = 0.25, double noiseMagnitude = 3.0, double overshootChance = 0.1, double overshootAmount = 0.1)
@@ -226,21 +233,15 @@ namespace MOGI
 			await RandomDelay(50, 100, token);
 
 			await MoveMouseHumanLike(end, token, durationSeconds: durationSeconds * 0.6, noiseMagnitude: noiseMagnitude);
-
-			await RandomDelay(100, 200, token);
+			
+			Point counterMovePoint = new Point(end.X, end.Y + 5); 
+			await MoveMouseHumanLike(counterMovePoint, token, durationSeconds: 0.05, noiseMagnitude: 1.0, overshootChance: 0.0);
+			await WaitForCursorStability(token);
+			await RandomDelay(30, 50, token); 
 
 			inputs[0].U.mi.dwFlags = MOUSEEVENTF_LEFTUP;
 			SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
 			await RandomDelay(100, 200, token);
-		}
-
-		public Point GetCenterPointInBox(Rectangle box)
-		{
-			// X와 Y 좌표 모두 슬롯의 중앙에서 ±10px 내에서만 움직이도록 제어합니다.
-			int x = (box.Left + box.Right) / 2 + _random.Next(-10, 11);
-			int y = (box.Top + box.Bottom) / 2 + _random.Next(-5, 6);
-
-			return new Point(x + _monitorXOffset, y);
 		}
 
 		public async Task SimulateLeftClick(CancellationToken token, int minClickDownTimeMs = 50, int maxClickDownTimeMs = 150)
@@ -280,7 +281,6 @@ namespace MOGI
 			await RandomDelay(delay, delay + _random.Next(0, 10), token);
 		}
 
-		#region 모니터 영역 계산 메서드
 		public Rectangle GetSecondaryMonitorCenterArea(int marginPercent = 10)
 		{
 			Screen secondaryScreen = Screen.AllScreens.FirstOrDefault(s => !s.Primary);
@@ -308,6 +308,45 @@ namespace MOGI
 				bounds.Height - 2 * marginY
 			);
 		}
-		#endregion
+
+		private async Task WaitForCursorStability(CancellationToken token, int stabilityCheckMs = 50, int timeoutMs = 1000)
+		{
+			var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+			var stabilityStopwatch = System.Diagnostics.Stopwatch.StartNew();
+			Point lastPosition = Cursor.Position;
+
+			while (stopwatch.ElapsedMilliseconds < timeoutMs)
+			{
+				await Task.Delay(25, token);
+				Point currentPosition = Cursor.Position;
+
+				if (currentPosition != lastPosition)
+				{
+					lastPosition = currentPosition;
+					stabilityStopwatch.Restart();
+				}
+
+				if (stabilityStopwatch.ElapsedMilliseconds >= stabilityCheckMs)
+				{
+					return;
+				}
+			}
+		}
+		public async Task SimulateFlick(Point start, Point end, CancellationToken token, double durationSeconds = 0.2)
+		{
+			await MoveMouseHumanLike(start, token, durationSeconds: durationSeconds * 0.7, noiseMagnitude: 1.0, overshootChance: 0.0);
+			await RandomDelay(30, 50, token);
+
+			INPUT[] inputs = new INPUT[1];
+			inputs[0] = new INPUT { type = INPUT_MOUSE, U = new InputUnion { mi = new MOUSEINPUT { dwFlags = MOUSEEVENTF_LEFTDOWN } } };
+			SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
+			await RandomDelay(30, 50, token);
+
+			await MoveMouseHumanLike(end, token, durationSeconds: durationSeconds * 0.7, noiseMagnitude: 1.0, overshootChance: 0.0);
+
+			inputs[0].U.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+			SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
+			await RandomDelay(100, 200, token);
+		}
 	}
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows.Forms;
-using MOGI; // CommonEnum.cs의 enum들을 사용하기 위해 네임스페이스 명시
 using System.ComponentModel;
 using System.Reflection;
 using System.Drawing;
@@ -9,96 +8,69 @@ namespace MOGI
 {
 	public class BaseContentController<TEnum> where TEnum : Enum
 	{
+		public Panel ContentPanel { get; private set; }
 		public event EventHandler<TEnum> ItemSelected;
-
-		public TableLayoutPanel ContentPanel { get; private set; }
-
-		private const float BASE_FONT_SIZE = 10F;
 
 		public BaseContentController()
 		{
-			this.ContentPanel = new TableLayoutPanel();
-			this.ContentPanel.Dock = DockStyle.Fill;
-			this.ContentPanel.ColumnCount = 1; 
-
-			this.ContentPanel.Resize += (sender, e) => AdjustFontsToPanelSize();
+			ContentPanel = new Panel
+			{
+				Dock = DockStyle.Fill,
+				AutoScroll = true
+			};
 
 			InitializeContentUI();
 		}
 
-		public void InitializeContentUI()
+		private void InitializeContentUI()
 		{
-			TableLayoutPanel panel = this.ContentPanel;
-
-			panel.Controls.Clear();
-			panel.RowStyles.Clear();
-			panel.RowCount = 0;
-
-			Array enumValues = Enum.GetValues(typeof(TEnum));
-			panel.RowCount = enumValues.Length;
-
-			if (enumValues.Length == 0) return;
-
-			float rowHeightPercent = 100f / enumValues.Length;
-
-			for (int i = 0; i < enumValues.Length; i++)
+			var tableLayoutPanel = new TableLayoutPanel
 			{
-				TEnum enumValue = (TEnum)enumValues.GetValue(i);
+				ColumnCount = 1,
+				Dock = DockStyle.Top,
+				AutoSize = true,
+				AutoSizeMode = AutoSizeMode.GrowAndShrink
+			};
+			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
-				panel.RowStyles.Add(new RowStyle(SizeType.Percent, rowHeightPercent));
-
-				RadioButton radioButton = new RadioButton();
-				radioButton.Text = GetEnumDescription(enumValue);
-				radioButton.Tag = enumValue;
-				radioButton.Appearance = Appearance.Button;
-				radioButton.Dock = DockStyle.Fill;
-				radioButton.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-
-				radioButton.Font = new Font("맑은 고딕", BASE_FONT_SIZE, FontStyle.Regular, GraphicsUnit.Point, ((byte)(129)));
-				radioButton.FlatStyle = FlatStyle.Standard;
-
-				radioButton.Click += RadioButton_Item_Click;
-
-				panel.Controls.Add(radioButton, 0, i);
+			foreach (TEnum enumValue in Enum.GetValues(typeof(TEnum)))
+			{
+				tableLayoutPanel.RowCount++;
+				tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
+				RadioButton itemButton = CreateItemButton(enumValue);
+				tableLayoutPanel.Controls.Add(itemButton, 0, tableLayoutPanel.RowCount - 1);
 			}
 
-			// 초기 폰트 크기 조절 호출
-			AdjustFontsToPanelSize();
+			ContentPanel.Controls.Add(tableLayoutPanel);
 		}
 
-		private void AdjustFontsToPanelSize()
+		private RadioButton CreateItemButton(TEnum enumValue)
 		{
-			if (ContentPanel.Width == 0 || ContentPanel.Height == 0) return;
-
-			float scaleFactor = ContentPanel.Height / (float)(ContentPanel.RowCount * 40); // 40은 임의의 기준 높이
-			float newFontSize = BASE_FONT_SIZE * scaleFactor;
-
-			newFontSize = Math.Min(Math.Max(newFontSize, 8F), 20F);
-
-			foreach (Control control in ContentPanel.Controls)
+			var radioButton = new RadioButton
 			{
-				if (control is RadioButton radioButton)
+				Text = GetEnumDescription(enumValue),
+				Tag = enumValue,
+				Appearance = Appearance.Button,
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleCenter,
+				Font = new Font("맑은 고딕", 10F, FontStyle.Regular, GraphicsUnit.Point, ((byte)(129)))
+			};
+			radioButton.Click += (sender, e) =>
+			{
+				if (sender is RadioButton clickedButton && clickedButton.Tag is TEnum selectedItem)
 				{
-					radioButton.Font = new Font(radioButton.Font.FontFamily, newFontSize, FontStyle.Regular, GraphicsUnit.Point, ((byte)(129)));
+					ItemSelected?.Invoke(this, selectedItem);
 				}
-			}
-		}
-
-		private void RadioButton_Item_Click(object sender, EventArgs e)
-		{
-			RadioButton? clickedButton = sender as RadioButton;
-			if (clickedButton != null && clickedButton.Tag is TEnum selectedItem)
-			{
-				ItemSelected?.Invoke(this, selectedItem);
-			}
+			};
+			return radioButton;
 		}
 
 		private string GetEnumDescription(Enum enumValue)
 		{
-			FieldInfo? field = enumValue.GetType().GetField(enumValue.ToString());
+			FieldInfo field = enumValue.GetType().GetField(enumValue.ToString());
 			if (field == null) return enumValue.ToString();
 
-			DescriptionAttribute? attribute = Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) as DescriptionAttribute;
+			DescriptionAttribute attribute = Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) as DescriptionAttribute;
 			return attribute == null ? enumValue.ToString() : attribute.Description;
 		}
 	}

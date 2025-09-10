@@ -57,7 +57,6 @@ namespace MOGI
 				{ AreaType.Hoeing, new Rectangle(1400, 157, 150, 240) },
 				{ AreaType.HerbGathering, new Rectangle(785, 157, 150, 240) },
 				{ AreaType.InsectGathering, new Rectangle(1612, 157, 150, 240) },
-				{ AreaType.Hoeing, new Rectangle(1400, 157, 150, 240) },
 				{ AreaType.LocationMove, new Rectangle(690, 600, 170, 25) },
 				{ AreaType.Skip, new Rectangle(1700, 35, 150, 40) },
 				{ AreaType.Open, new Rectangle(1064, 960, 150, 60) },

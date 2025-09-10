@@ -11,7 +11,7 @@ namespace MOGI
 		private readonly Input_Manager _inputManager;
 		private readonly CancellationToken _token;
 		private const int BottomPaddingY = 30;
-		private const int BottomScrollY = 500;
+		private const int BottomScrollDistance = 500;
 
 		public UiController(Input_Manager inputManager, CancellationToken token)
 		{
@@ -78,17 +78,18 @@ namespace MOGI
 
 		private async Task PerformUnitScroll()
 		{
-			Point start = _inputManager.GetCenterPointInBox(DefaultSlotAreas[2]);
-			Point end = _inputManager.GetCenterPointInBox(DefaultSlotAreas[1]);
+			var (start, end) = _inputManager.GetPreciseDragPoints(DefaultSlotAreas[2], DefaultSlotAreas[1]);
 			await _inputManager.SimulateDrag(start, end, _token, durationSeconds: 0.25);
 		}
-
-		private async Task ScrollToBottom()
+		
+private async Task ScrollToBottom()
 		{
-			Point start = _inputManager.GetCenterPointInBox(DefaultSlotAreas[3]);
-			Point end = new Point(start.X, start.Y - BottomScrollY);
-			await _inputManager.SimulateDrag(start, end, _token, durationSeconds: 0.4);
-			await _inputManager.RandomDelay(300, 500, _token);
+			Point start = _inputManager.GetRandomPointInBox(DefaultSlotAreas[3]);
+			Point end = new Point(start.X, start.Y - BottomScrollDistance);
+
+			await _inputManager.SimulateFlick(start, end, _token, durationSeconds: 0.2);
+
+			await _inputManager.RandomDelay(500, 700, _token);
 		}
 	}
 }
