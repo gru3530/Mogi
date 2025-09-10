@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Linq;
 
 namespace MOGI
 {
@@ -26,14 +27,7 @@ namespace MOGI
 			_monitorXOffset = offset;
 		}
 
-		#region P/Invoke 및 구조체 선언
-		[DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
-		private static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint cButtons, uint dwExtraInfo);
-
-		private const int MOUSEEVENTF_LEFTDOWN = 0x02;
-		private const int MOUSEEVENTF_LEFTUP = 0x04;
-		private const int MOUSEEVENTF_WHEEL = 0x0800;
-
+		#region P/Invoke
 		[DllImport("user32.dll", SetLastError = true)]
 		private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
@@ -84,7 +78,13 @@ namespace MOGI
 			public ushort wParamH;
 		}
 
+		private const uint INPUT_MOUSE = 0;
 		private const uint INPUT_KEYBOARD = 1;
+
+		private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
+		private const uint MOUSEEVENTF_LEFTUP = 0x0004;
+		private const uint MOUSEEVENTF_WHEEL = 0x0800;
+
 		private const uint KEYEVENTF_KEYDOWN = 0x0000;
 		private const uint KEYEVENTF_KEYUP = 0x0002;
 		#endregion
@@ -116,9 +116,9 @@ namespace MOGI
 			Point startPosition = Cursor.Position;
 			double totalDistance = Math.Sqrt(Math.Pow(targetPosition.X - startPosition.X, 2) + Math.Pow(targetPosition.Y - startPosition.Y, 2));
 
-			if (totalDistance < 1) return; // 거리가 너무 가까우면 이동 생략
+			if (totalDistance < 1) return;
 
-			double controlPointOffsetMagnitude = Math.Min(totalDistance * 0.3, 150);
+			double controlPointOffsetMagnitude = Math.Min(totalDistance * 0.15, 80);
 			Point controlPoint = new Point(
 				(int)(startPosition.X + (targetPosition.X - startPosition.X) * 0.5 + NextGaussian(0, controlPointOffsetMagnitude) * (_random.Next(0, 2) * 2 - 1)),
 				(int)(startPosition.Y + (targetPosition.Y - startPosition.Y) * 0.5 + NextGaussian(0, controlPointOffsetMagnitude) * (_random.Next(0, 2) * 2 - 1))
@@ -128,12 +128,10 @@ namespace MOGI
 
 			int calculatedMinSteps = Math.Max(30, (int)(totalDistance / 8.0));
 			int calculatedMaxSteps = Math.Max(calculatedMinSteps + 1, (int)(totalDistance / 4.0));
-
 			int finalMinSteps = Math.Min(calculatedMinSteps, 150);
 			int finalMaxSteps = Math.Min(calculatedMaxSteps, 200);
 
 			if (finalMinSteps > finalMaxSteps) finalMinSteps = finalMaxSteps;
-
 			int steps = _random.Next(finalMinSteps, finalMaxSteps + 1);
 			if (steps == 0) steps = 1;
 
@@ -176,32 +174,26 @@ namespace MOGI
 				token.ThrowIfCancellationRequested();
 				await MoveMouseHumanLike(targetPosition, token, durationSeconds * 0.15, noiseMagnitude * 0.5, 0.0, 0.0);
 			}
-
 			Cursor.Position = targetPosition;
 		}
+
 		public async Task SimulateTapAsync(Rectangle targetArea, CancellationToken token, int minClickDownTimeMs = 30, int maxClickDownTimeMs = 80)
 		{
 			Point targetPoint = GetRandomPointInBox(targetArea);
-
 			Cursor.Position = targetPoint;
-
 			await SimulateLeftClick(token, minClickDownTimeMs, maxClickDownTimeMs);
 		}
 
-
-		// *** 수정된 PerformClickSequence ***
 		public async Task PerformClickSequence(
 			Rectangle targetArea, CancellationToken token,
 			int preClickDelayMinMs = 300, int preClickDelayMaxMs = 700,
 			int clickDownTimeMinMs = 60, int clickDownTimeMaxMs = 180,
 			int postClickDelayMinMs = 700, int postClickDelayMaxMs = 1500,
 			double mouseMoveDurationSec = 0.25, double mouseMoveNoise = 3.0, double mouseOvershootChance = 0.15, double mouseOvershootAmount = 0.05,
-			double oclickChance = 0.05, double oclickOffset = 20.0
-		)
+			double oclickChance = 0.05, double oclickOffset = 20.0)
 		{
 			Point targetClickPoint = GetRandomPointInBox(targetArea);
 
-			// '오클릭' 시뮬레이션
 			if (RandomInstance.NextDouble() < oclickChance)
 			{
 				Point oclickPoint = new Point(
@@ -211,42 +203,55 @@ namespace MOGI
 
 				await MoveMouseHumanLike(oclickPoint, token, durationSeconds: mouseMoveDurationSec * 0.6, noiseMagnitude: mouseMoveNoise * 0.7, overshootChance: 0.0, overshootAmount: 0.0);
 				await RandomDelay(100, 300, token);
-
-				// 다시 원래 목표 지점으로 이동
 				await MoveMouseHumanLike(targetClickPoint, token, durationSeconds: mouseMoveDurationSec * 0.8, noiseMagnitude: mouseMoveNoise * 0.8, overshootChance: mouseOvershootChance, overshootAmount: mouseOvershootAmount);
 			}
 			else
 			{
-				// 정상 이동
 				await MoveMouseHumanLike(targetClickPoint, token, durationSeconds: mouseMoveDurationSec, noiseMagnitude: mouseMoveNoise, overshootChance: mouseOvershootChance, overshootAmount: mouseOvershootAmount);
 			}
 
 			await RandomDelay(preClickDelayMinMs, preClickDelayMaxMs, token);
-			await SimulateLeftClick(token, clickDownTimeMinMs, clickDownTimeMaxMs); // min/max로 변경
+			await SimulateLeftClick(token, clickDownTimeMinMs, clickDownTimeMaxMs);
 			await RandomDelay(postClickDelayMinMs, postClickDelayMaxMs, token);
 		}
 
-		// *** 수정된 SimulateDrag ***
 		public async Task SimulateDrag(Point start, Point end, CancellationToken token, double durationSeconds = 0.4, double noiseMagnitude = 3.0)
 		{
 			await MoveMouseHumanLike(start, token, durationSeconds: durationSeconds * 0.4, noiseMagnitude: noiseMagnitude);
+			await RandomDelay(50, 100, token);
 
-			// mouse_event를 사용하여 마우스 버튼 누르기
-			mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+			INPUT[] inputs = new INPUT[1];
+			inputs[0] = new INPUT { type = INPUT_MOUSE, U = new InputUnion { mi = new MOUSEINPUT { dwFlags = MOUSEEVENTF_LEFTDOWN } } };
+			SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
 			await RandomDelay(50, 100, token);
 
 			await MoveMouseHumanLike(end, token, durationSeconds: durationSeconds * 0.6, noiseMagnitude: noiseMagnitude);
 
-			// mouse_event를 사용하여 마우스 버튼 떼기
-			mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 			await RandomDelay(100, 200, token);
+
+			inputs[0].U.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+			SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
+			await RandomDelay(100, 200, token);
+		}
+
+		public Point GetCenterPointInBox(Rectangle box)
+		{
+			// X와 Y 좌표 모두 슬롯의 중앙에서 ±10px 내에서만 움직이도록 제어합니다.
+			int x = (box.Left + box.Right) / 2 + _random.Next(-10, 11);
+			int y = (box.Top + box.Bottom) / 2 + _random.Next(-5, 6);
+
+			return new Point(x + _monitorXOffset, y);
 		}
 
 		public async Task SimulateLeftClick(CancellationToken token, int minClickDownTimeMs = 50, int maxClickDownTimeMs = 150)
 		{
-			mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+			INPUT[] inputs = new INPUT[2];
+			inputs[0] = new INPUT { type = INPUT_MOUSE, U = new InputUnion { mi = new MOUSEINPUT { dwFlags = MOUSEEVENTF_LEFTDOWN } } };
+			inputs[1] = new INPUT { type = INPUT_MOUSE, U = new InputUnion { mi = new MOUSEINPUT { dwFlags = MOUSEEVENTF_LEFTUP } } };
+
+			SendInput(1, new INPUT[] { inputs[0] }, Marshal.SizeOf(typeof(INPUT)));
 			await RandomDelay(minClickDownTimeMs, maxClickDownTimeMs, token);
-			mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+			SendInput(1, new INPUT[] { inputs[1] }, Marshal.SizeOf(typeof(INPUT)));
 		}
 
 		public async Task SimulateKeyPress(Keys key, CancellationToken token, int minDownTimeMs = 50, int maxDownTimeMs = 150)
@@ -265,7 +270,7 @@ namespace MOGI
 		public async Task SimulateMouseWheelScroll(int wheelDelta, CancellationToken token, double meanScrollDelayMs = 200, double stdDevScrollDelayMs = 50)
 		{
 			INPUT[] inputs = new INPUT[1];
-			inputs[0].type = 0; // MOUSE_INPUT
+			inputs[0].type = INPUT_MOUSE;
 			inputs[0].U.mi.dwFlags = MOUSEEVENTF_WHEEL;
 			inputs[0].U.mi.mouseData = (uint)wheelDelta;
 
@@ -281,7 +286,6 @@ namespace MOGI
 			Screen secondaryScreen = Screen.AllScreens.FirstOrDefault(s => !s.Primary);
 			if (secondaryScreen == null)
 			{
-				Console.WriteLine("보조 모니터를 찾을 수 없습니다. 주 모니터를 사용합니다.");
 				return GetPrimaryMonitorCenterArea(marginPercent);
 			}
 			return GetScreenCenterArea(secondaryScreen, marginPercent);

@@ -10,6 +10,8 @@ namespace MOGI
 	{
 		private readonly Input_Manager _inputManager;
 		private readonly CancellationToken _token;
+		private const int BottomPaddingY = 30;
+		private const int BottomScrollY = 500;
 
 		public UiController(Input_Manager inputManager, CancellationToken token)
 		{
@@ -32,6 +34,7 @@ namespace MOGI
 		{
 			var allPossibleItems = (TEnum[])Enum.GetValues(typeof(TEnum));
 			int itemIndex = Array.IndexOf(allPossibleItems, itemToSelect);
+			int totalItems = allPossibleItems.Length;
 
 			if (itemIndex == -1)
 			{
@@ -46,31 +49,46 @@ namespace MOGI
 				return;
 			}
 
-			int itemsToScroll = itemIndex - (visibleSlotsCount - 1);
-			int scrolls_3_needed = itemsToScroll / 3;
-			int remainder = itemsToScroll % 3;
-			int scrolls_2_needed = remainder / 2;
-			int scrolls_1_needed = remainder % 2;
+			if (itemIndex >= totalItems - visibleSlotsCount)
+			{
+				await ScrollToBottom();
 
-			await PerformScroll(scrolls_3_needed, 0, 0.3);
-			await PerformScroll(scrolls_2_needed, 1, 0.35);
-			await PerformScroll(scrolls_1_needed, 2, 0.4);
+				int slotIndexAfterScroll = itemIndex - (totalItems - visibleSlotsCount);
+				Rectangle originalRect = DefaultSlotAreas[slotIndexAfterScroll];
+				Rectangle adjustedRect = new Rectangle(
+					originalRect.X,
+					originalRect.Y - BottomPaddingY,
+					originalRect.Width,
+					originalRect.Height
+				);
 
-			await ClickArea(DefaultSlotAreas[visibleSlotsCount - 1]);
+				await ClickArea(adjustedRect);
+			}
+			else
+			{
+				int itemsToScroll = itemIndex - (visibleSlotsCount - 1);
+				for (int i = 0; i < itemsToScroll; i++)
+				{
+					await PerformUnitScroll();
+					await _inputManager.RandomDelay(150, 250, _token);
+				}
+				await ClickArea(DefaultSlotAreas[visibleSlotsCount - 1]);
+			}
 		}
 
-		private async Task PerformScroll(int scrollsNeeded, int endSlotIndex, double duration)
+		private async Task PerformUnitScroll()
 		{
-			if (scrollsNeeded <= 0) return;
+			Point start = _inputManager.GetCenterPointInBox(DefaultSlotAreas[2]);
+			Point end = _inputManager.GetCenterPointInBox(DefaultSlotAreas[1]);
+			await _inputManager.SimulateDrag(start, end, _token, durationSeconds: 0.25);
+		}
 
-			Point start = _inputManager.GetRandomPointInBox(DefaultSlotAreas[3]);
-			Point end = _inputManager.GetRandomPointInBox(DefaultSlotAreas[endSlotIndex]);
-
-			for (int i = 0; i < scrollsNeeded; i++)
-			{
-				await _inputManager.SimulateDrag(start, end, _token, durationSeconds: duration);
-				await _inputManager.RandomDelay(300, 500, _token);
-			}
+		private async Task ScrollToBottom()
+		{
+			Point start = _inputManager.GetCenterPointInBox(DefaultSlotAreas[3]);
+			Point end = new Point(start.X, start.Y - BottomScrollY);
+			await _inputManager.SimulateDrag(start, end, _token, durationSeconds: 0.4);
+			await _inputManager.RandomDelay(300, 500, _token);
 		}
 	}
 }
