@@ -55,56 +55,13 @@ namespace MOGI
 				{ AreaType.Mining, new Rectangle(580, 159, 150, 240) },
 				{ AreaType.Harvest, new Rectangle(1190, 159, 150, 240) },
 				{ AreaType.Hoeing, new Rectangle(1400, 157, 150, 240) },
+				{ AreaType.HerbGathering, new Rectangle(785, 157, 150, 240) },
+				{ AreaType.InsectGathering, new Rectangle(1612, 157, 150, 240) },
+				{ AreaType.Hoeing, new Rectangle(1400, 157, 150, 240) },
 				{ AreaType.LocationMove, new Rectangle(690, 600, 170, 25) },
 				{ AreaType.Skip, new Rectangle(1700, 35, 150, 40) },
 				{ AreaType.Open, new Rectangle(1064, 960, 150, 60) },
 			});
-
-			RegisterAreaMap(new Dictionary<CropType, Rectangle>
-			{
-				{ CropType.Wheat, _defaultSlotAreas[0] },
-				{ CropType.Corn,  _defaultSlotAreas[1] },
-				{ CropType.Bean,  _defaultSlotAreas[2] },
-			});
-
-			RegisterAreaMap(new Dictionary<HoeingType, Rectangle>
-			{
-				{ HoeingType.Potato, _defaultSlotAreas[0] },
-				{ HoeingType.Onion, _defaultSlotAreas[1] },
-				{ HoeingType.Clam, _defaultSlotAreas[2] },
-				{ HoeingType.Parsnip, _defaultSlotAreas[3] }
-			});
-
-			RegisterAreaMap(new Dictionary<WoodType, Rectangle>
-			{
-				{ WoodType.Normal, _defaultSlotAreas[0] },
-                { WoodType.Pointed, _defaultSlotAreas[1] },
-                { WoodType.Thick, _defaultSlotAreas[2] },
-                { WoodType.Usable, _defaultSlotAreas[3] }
-            });
-
-			RegisterAreaMap(new Dictionary<MineralType, Rectangle>
-			{
-				{ MineralType.Ore, _defaultSlotAreas[0] },
-				{ MineralType.Iron, _defaultSlotAreas[1] },
-                { MineralType.Ice, _defaultSlotAreas[2] },
-                { MineralType.Coal, _defaultSlotAreas[3] },
-            });
-
-			RegisterAreaMap(new Dictionary<HerbType, Rectangle>
-			{
-				{ HerbType.Base, _defaultSlotAreas[0] },
-                { HerbType.Bloody, _defaultSlotAreas[1] },
-                { HerbType.Mana, _defaultSlotAreas[2] }
-            });
-
-			RegisterAreaMap(new Dictionary<InsectType, Rectangle>
-			{
-				{ InsectType.Light, _defaultSlotAreas[0] },
-                { InsectType.SnowfieldLight, _defaultSlotAreas[1] },
-                { InsectType.Insect, _defaultSlotAreas[2] },
-                { InsectType.Quiet, _defaultSlotAreas[3] }
-            });
 
 			RegisterKeyMaps();
 		}
