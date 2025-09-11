@@ -13,6 +13,9 @@ public enum AreaType
 	[Description("이동 시작")] LocationMove,
 	[Description("장면넘기기")] Skip,
 	[Description("계속 열기")] Open,
+	[Description("판매 버튼")] SellButton,
+	[Description("최대 버튼")] MaxButton,
+	[Description("판매하기 버튼")] ConfirmSellButton,
 }
 
 public enum CropType
