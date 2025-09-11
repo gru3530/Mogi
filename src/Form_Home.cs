@@ -24,7 +24,7 @@ namespace MOGI
 		private Dictionary<TaskType, Func<Enum, BaseAutomationTask>> _taskFactory;
 
 		private Task_Manager _taskManager;
-		private Input_Manager _inputManager;
+		private ConfigManager _configManager => ConfigManager.Instance;
 
 		private TaskType _selectedLifeActivityType = TaskType.None;
 		private Enum _selectedDetailItem = null;
@@ -45,12 +45,12 @@ namespace MOGI
 		private void Initialize()
 		{
 			_taskManager = Task_Manager.Instance;
-			_inputManager = Input_Manager.Instance;
 
 			InitializeFormsAndEvents();
 			InitializeLifeSkillButtons();
 			InitializeTaskFactory();
-			InitializeAutoSellFeature();
+			InitializeAutoSellConfig();
+			InitializeAutoSellUI();
 			InitializeDefaultUI();
 		}
 
@@ -150,13 +150,8 @@ namespace MOGI
 			};
 		}
 
-		private void InitializeAutoSellFeature()
+		private void InitializeAutoSellUI()
 		{
-			var config = LoadSellConfigAndPopulateUi();
-
-			_sellTimer = new System.Windows.Forms.Timer();
-			_statusBlinkTimer = new System.Windows.Forms.Timer { Interval = 1500 };
-
 			checkBox_ToggleAutoSell.CheckedChanged += CheckBox_ToggleAutoSell_CheckedChanged;
 			trackBar_Interval.Scroll += TrackBar_Interval_Scroll;
 			_sellTimer.Tick += SellTimer_Tick;
@@ -165,6 +160,34 @@ namespace MOGI
 			trackBar_Interval.Value = 60;
 			pictureBox_Status.BackColor = Color.Crimson;
 			TrackBar_Interval_Scroll(null, null);
+		}
+
+		private void InitializeAutoSellConfig()
+		{
+			if (!_configManager.IsConfigLoadedFromFile)
+			{
+				var result = MessageBox.Show(
+					$"설정 파일({ConfigManager.ConfigFileName})을 찾을 수 없습니다.\n\n기본 설정으로 새 파일을 생성하시겠습니까?",
+					"설정 파일 생성",
+					MessageBoxButtons.YesNo,
+					MessageBoxIcon.Question);
+
+				if (result == DialogResult.Yes)
+				{
+					var defaultConfig = new AppSettings
+					{
+						AutoSell = new AutoSellSettings
+						{
+							JunkItemNames = new List<string> { "통나무", "상급 통나무", "나뭇가지", "최상급 통나무", "나무 진액" }
+						}
+					};
+					_configManager.SaveSettings(defaultConfig);
+				}
+			}
+
+			SetSellListUi();
+			_sellTimer = new System.Windows.Forms.Timer();
+			_statusBlinkTimer = new System.Windows.Forms.Timer { Interval = 1500 };
 		}
 
 		private void InitializeDefaultUI()
@@ -176,36 +199,17 @@ namespace MOGI
 		#endregion
 
 		#region 자동 판매 기능
-		private AppSettings LoadSellConfigAndPopulateUi()
+		private void SetSellListUi()
 		{
-			AppSettings config;
-			try
-			{
-				string jsonString = File.ReadAllText("config.json");
-				config = JsonSerializer.Deserialize<AppSettings>(jsonString);
-			}
-			catch (Exception ex)
-			{
-				MessageBox.Show($"설정 파일(config.json) 로드 실패: {ex.Message}");
-				config = new AppSettings
-				{
-					AutoSell = new AutoSellSettings
-					{
-						JunkItemNames = new List<string>()
-					}
-				};
-			}
-
+			var autoSellSettings = _configManager.Settings.AutoSell;
 			listBox_SellItems.Items.Clear();
-
-			if (config?.AutoSell?.JunkItemNames != null)
+			if (autoSellSettings?.JunkItemNames != null)
 			{
-				foreach (var item in config.AutoSell.JunkItemNames)
+				foreach (var item in autoSellSettings.JunkItemNames)
 				{
 					listBox_SellItems.Items.Add(item);
 				}
 			}
-			return config;
 		}
 
 		private void TrackBar_Interval_Scroll(object sender, EventArgs e)

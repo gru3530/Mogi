@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Text.Json;
-using System.Collections.Generic;
+﻿using System.Text.Json;
 
 namespace MOGI
 {
@@ -11,6 +8,8 @@ namespace MOGI
 		public static ConfigManager Instance => _instance.Value;
 
 		public AppSettings Settings { get; private set; }
+		public bool IsConfigLoadedFromFile { get; private set; } = false;
+		public const string ConfigFileName = "config.json";
 
 		private ConfigManager()
 		{
@@ -21,19 +20,30 @@ namespace MOGI
 		{
 			try
 			{
-				string jsonString = File.ReadAllText("config.json");
+				string jsonString = File.ReadAllText(ConfigFileName);
 				Settings = JsonSerializer.Deserialize<AppSettings>(jsonString);
+				IsConfigLoadedFromFile = true;
+			}
+			catch
+			{
+				IsConfigLoadedFromFile = false;
+				Settings = new AppSettings { AutoSell = new AutoSellSettings { JunkItemNames = new List<string>() } };
+			}
+		}
+
+		public void SaveSettings(AppSettings settings)
+		{
+			try
+			{
+				var options = new JsonSerializerOptions { WriteIndented = true };
+				string newJsonString = JsonSerializer.Serialize(settings, options);
+				File.WriteAllText(ConfigFileName, newJsonString);
+
+				this.Settings = settings;
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"config.json 로드 실패: {ex.Message}");
-				Settings = new AppSettings
-				{
-					AutoSell = new AutoSellSettings
-					{
-						JunkItemNames = new List<string>()
-					}
-				};
+				MessageBox.Show($"{ConfigFileName} 파일 저장에 실패했습니다: {ex.Message}");
 			}
 		}
 	}
