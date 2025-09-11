@@ -6,22 +6,17 @@ namespace MOGI
 		private Task_Manager _taskManager;
 
 		private Form_Home _formHome;
-		private Form _currentChildForm;
 
 		public Form_Main()
 		{
 			InitializeComponent();
 			_taskManager = Task_Manager.Instance;
 
-			// 서비스 시작/종료는 이제 Program.cs에서 담당하므로 여기서는 제거
 			// this.Load += (sender, e) => _taskManager.StartTask(new EmptyTask(new CancellationToken()), new TaskConfiguration());
-			// this.FormClosing += (sender, e) => _taskManager.StopAllTasks();
-
+			this.FormClosing += (sender, e) => _taskManager.StopAllTasks();
 			_formHome = new Form_Home();
 
-
 			AddFormToPanel(_formHome);
-
 
 			ShowChildForm(_formHome);
 		}

@@ -293,7 +293,7 @@ namespace MOGI
 
 		public Rectangle GetPrimaryMonitorCenterArea(int marginPercent = 10)
 		{
-			return GetScreenCenterArea(Screen.PrimaryScreen, marginPercent);
+			return GetScreenCenterArea(Screen.PrimaryScreen!, marginPercent);
 		}
 
 		private Rectangle GetScreenCenterArea(Screen screen, int marginPercent)

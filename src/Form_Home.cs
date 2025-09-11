@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using MOGI;
 using static MOGI.TaskDefinition;
@@ -12,7 +13,6 @@ namespace MOGI
 {
 	public partial class Form_Home : Form
 	{
-		#region 멤버 변수
 		private Form_Harvest _formHarvest;
 		private Form_Hoeing _formHoeing;
 		private Form_Mining _formMining;
@@ -29,11 +29,11 @@ namespace MOGI
 		private TaskType _selectedLifeActivityType = TaskType.None;
 		private Enum _selectedDetailItem = null;
 
-		// 자동 판매 기능 관련
 		private System.Windows.Forms.Timer _sellTimer;
 		private System.Windows.Forms.Timer _statusBlinkTimer;
+		private System.Windows.Forms.Timer _countdownTimer;
+		private TimeSpan _remainingSellTime;
 		private bool _isBlinkOn = false;
-		#endregion
 
 		public Form_Home()
 		{
@@ -41,7 +41,6 @@ namespace MOGI
 			Initialize();
 		}
 
-		#region 초기화
 		private void Initialize()
 		{
 			_taskManager = Task_Manager.Instance;
@@ -49,8 +48,7 @@ namespace MOGI
 			InitializeFormsAndEvents();
 			InitializeLifeSkillButtons();
 			InitializeTaskFactory();
-			InitializeAutoSellConfig();
-			InitializeAutoSellUI();
+			InitializeAutoSellFeature();
 			InitializeDefaultUI();
 		}
 
@@ -88,6 +86,7 @@ namespace MOGI
 			_taskManager.MousePositionChanged += TaskManager_MousePositionChanged;
 			_taskManager.CurrentTaskNameChanged += TaskManager_CurrentTaskNameChanged;
 			_taskManager.TaskProgressUpdated += TaskManager_TaskProgressUpdated;
+			_taskManager.MainTaskStateChanged += TaskManager_MainTaskStateChanged;
 		}
 
 		private void InitializeLifeSkillButtons()
@@ -126,7 +125,6 @@ namespace MOGI
 				tableLayoutPanel_LifeSkills.Controls.Add(button, i % 2, i / 2);
 			}
 
-			// '나무 베기'를 기본으로 선택
 			foreach (RadioButton button in tableLayoutPanel_LifeSkills.Controls)
 			{
 				if ((TaskType)button.Tag == TaskType.Woodcutting)
@@ -150,24 +148,12 @@ namespace MOGI
 			};
 		}
 
-		private void InitializeAutoSellUI()
-		{
-			checkBox_ToggleAutoSell.CheckedChanged += CheckBox_ToggleAutoSell_CheckedChanged;
-			trackBar_Interval.Scroll += TrackBar_Interval_Scroll;
-			_sellTimer.Tick += SellTimer_Tick;
-			_statusBlinkTimer.Tick += StatusBlinkTimer_Tick;
-
-			trackBar_Interval.Value = 60;
-			pictureBox_Status.BackColor = Color.Crimson;
-			TrackBar_Interval_Scroll(null, null);
-		}
-
-		private void InitializeAutoSellConfig()
+		private void InitializeAutoSellFeature()
 		{
 			if (!_configManager.IsConfigLoadedFromFile)
 			{
 				var result = MessageBox.Show(
-					$"설정 파일({ConfigManager.ConfigFileName})을 찾을 수 없습니다.\n\n기본 설정으로 새 파일을 생성하시겠습니까?",
+					$"설정 파일(config.json)을 찾을 수 없습니다.\n\n기본 설정으로 새 파일을 생성하시겠습니까?",
 					"설정 파일 생성",
 					MessageBoxButtons.YesNo,
 					MessageBoxIcon.Question);
@@ -185,22 +171,6 @@ namespace MOGI
 				}
 			}
 
-			SetSellListUi();
-			_sellTimer = new System.Windows.Forms.Timer();
-			_statusBlinkTimer = new System.Windows.Forms.Timer { Interval = 1500 };
-		}
-
-		private void InitializeDefaultUI()
-		{
-			UpdateTaskTimes(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, 0, 0);
-			trackBar_Repetitions.Value = 1;
-			label_Repetitions.Text = $"{trackBar_Repetitions.Value} 회";
-		}
-		#endregion
-
-		#region 자동 판매 기능
-		private void SetSellListUi()
-		{
 			var autoSellSettings = _configManager.Settings.AutoSell;
 			listBox_SellItems.Items.Clear();
 			if (autoSellSettings?.JunkItemNames != null)
@@ -210,35 +180,35 @@ namespace MOGI
 					listBox_SellItems.Items.Add(item);
 				}
 			}
+
+			_sellTimer = new System.Windows.Forms.Timer();
+			_statusBlinkTimer = new System.Windows.Forms.Timer { Interval = 1500 };
+			_countdownTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+
+			checkBox_ToggleAutoSell.CheckedChanged += CheckBox_ToggleAutoSell_CheckedChanged;
+			trackBar_Interval.Scroll += TrackBar_Interval_Scroll;
+			_sellTimer.Tick += SellTimer_Tick;
+			_statusBlinkTimer.Tick += StatusBlinkTimer_Tick;
+			_countdownTimer.Tick += CountdownTimer_Tick;
+
+			trackBar_Interval.Value = 60;
+			pictureBox_Status.BackColor = Color.Crimson;
+			TrackBar_Interval_Scroll(null, null);
 		}
 
-		private void TrackBar_Interval_Scroll(object sender, EventArgs e)
+		private void InitializeDefaultUI()
 		{
-			trackBar_Interval.Value = (trackBar_Interval.Value / 5) * 5;
-			int totalMinutes = trackBar_Interval.Value;
+			UpdateTaskTimes(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, 0, 0);
+			trackBar_Repetitions.Value = 1;
+			label_Repetitions.Text = $"{trackBar_Repetitions.Value} 회";
+			label_NextSellTime.Text = "";
+		}
 
-			if (totalMinutes >= 60)
+		private void TaskManager_MainTaskStateChanged(MainTaskState newState)
+		{
+			if (newState == MainTaskState.Idling)
 			{
-				int hours = totalMinutes / 60;
-				int remainingMinutes = totalMinutes % 60;
-
-				if (remainingMinutes == 0)
-				{
-					label_Interval.Text = $"{hours}시간마다";
-				}
-				else
-				{
-					label_Interval.Text = $"{hours}시간 {remainingMinutes}분마다";
-				}
-			}
-			else
-			{
-				label_Interval.Text = $"{totalMinutes}분마다";
-			}
-
-			if (_sellTimer.Enabled)
-			{
-				_sellTimer.Interval = totalMinutes * 60 * 1000;
+				_taskManager.RequestSellTask();
 			}
 		}
 
@@ -246,19 +216,36 @@ namespace MOGI
 		{
 			if (checkBox_ToggleAutoSell.Checked)
 			{
+				_remainingSellTime = TimeSpan.FromMinutes(trackBar_Interval.Value);
 				_sellTimer.Interval = trackBar_Interval.Value * 60 * 1000;
 				_sellTimer.Start();
-				_statusBlinkTimer.Start();
-
-				RunSellTask();
+				_countdownTimer.Start();
+				pictureBox_Status.BackColor = Color.MediumSeaGreen;
+				_taskManager.RequestSellTask();
 			}
 			else
 			{
 				_sellTimer.Stop();
+				_countdownTimer.Stop();
 				_statusBlinkTimer.Stop();
-				_taskManager.StopSellTask(); 
 				pictureBox_Status.BackColor = Color.Crimson;
+				label_NextSellTime.Text = "";
 			}
+		}
+
+		private void SellTimer_Tick(object sender, EventArgs e)
+		{
+			_taskManager.RequestSellTask();
+			_remainingSellTime = TimeSpan.FromMinutes(trackBar_Interval.Value);
+		}
+
+		private void CountdownTimer_Tick(object sender, EventArgs e)
+		{
+			if (_remainingSellTime.TotalSeconds > 0)
+			{
+				_remainingSellTime = _remainingSellTime.Subtract(TimeSpan.FromSeconds(1));
+			}
+			label_NextSellTime.Text = $"다음 판매: {_remainingSellTime:mm\\:ss}";
 		}
 
 		private void StatusBlinkTimer_Tick(object sender, EventArgs e)
@@ -267,30 +254,13 @@ namespace MOGI
 			_isBlinkOn = !_isBlinkOn;
 		}
 
-		private void SellTimer_Tick(object sender, EventArgs e)
-		{
-			RunSellTask();
-		}
-
-		private void RunSellTask()
-		{
-			if (_taskManager.IsSellTaskRunning()) return; // 이미 판매중이면 중복 실행 방지
-
-			var sellTask = new TaskSellJunkItems(ConfigManager.Instance.Settings.AutoSell.JunkItemNames);
-			_taskManager.StartSellTask(sellTask, new TaskConfig());
-		}
-		#endregion
-
-		#region UI 이벤트 핸들러
 		private void LifeSkillButton_CheckedChanged(object sender, EventArgs e)
 		{
 			var checkedRadio = sender as RadioButton;
 			if (checkedRadio != null && checkedRadio.Checked)
 			{
-				var selectedTaskType = (TaskType)checkedRadio.Tag;
-				_selectedLifeActivityType = selectedTaskType;
-
-				if (_lifeSkillForms.TryGetValue(selectedTaskType, out Form formToShow))
+				_selectedLifeActivityType = (TaskType)checkedRadio.Tag;
+				if (_lifeSkillForms.TryGetValue(_selectedLifeActivityType, out Form formToShow))
 				{
 					ShowContentForm(formToShow);
 				}
@@ -310,16 +280,10 @@ namespace MOGI
 				return;
 			}
 
-			BaseAutomationTask taskToStart = null;
 			if (_taskFactory.TryGetValue(_selectedLifeActivityType, out var factoryFunc))
 			{
-				taskToStart = factoryFunc(_selectedDetailItem);
-			}
-
-			if (taskToStart != null)
-			{
-				int repetitions = trackBar_Repetitions.Value;
-				TaskConfig config = new TaskConfig(repetitions, false);
+				var taskToStart = factoryFunc(_selectedDetailItem);
+				var config = new TaskConfig(trackBar_Repetitions.Value, false);
 				_taskManager.StartMainTask(taskToStart, config);
 			}
 			else
@@ -337,9 +301,27 @@ namespace MOGI
 		{
 			label_Repetitions.Text = $"{trackBar_Repetitions.Value} 회";
 		}
-		#endregion
 
-		#region TaskManager 업데이트
+		private void TrackBar_Interval_Scroll(object sender, EventArgs e)
+		{
+			trackBar_Interval.Value = (trackBar_Interval.Value / 5) * 5;
+			int minutes = trackBar_Interval.Value;
+			if (minutes >= 60)
+			{
+				label_Interval.Text = $"{minutes / 60.0:F1} 시간마다";
+			}
+			else
+			{
+				label_Interval.Text = $"{minutes} 분마다";
+			}
+
+			if (_sellTimer.Enabled)
+			{
+				_sellTimer.Interval = minutes * 60 * 1000;
+				_remainingSellTime = TimeSpan.FromMinutes(minutes);
+			}
+		}
+
 		private void TaskManager_MousePositionChanged(object sender, Point e) => UpdateMouseCoordinates(e);
 		private void TaskManager_CurrentTaskNameChanged(object sender, string e) => UpdateTaskLabel(e);
 		private void TaskManager_TaskProgressUpdated(object sender, TaskProgressEventArgs e) => UpdateTaskTimes(e.TotalEstimatedTime, e.ElapsedTime, e.RemainingTime, e.CurrentRepetition, e.TotalRepetitions);
@@ -365,9 +347,7 @@ namespace MOGI
 			label_RemainingTime.Text = $"{remaining:hh\\:mm\\:ss}";
 			label_CurrentRepetition.Text = $"{currentRep}/{totalReps}";
 		}
-		#endregion
 
-		#region 헬퍼 메서드
 		private void AddFormToPanel(Form childForm)
 		{
 			childForm.TopLevel = false;
@@ -386,6 +366,5 @@ namespace MOGI
 			}
 			formToShow.Show();
 		}
-		#endregion
 	}
 }

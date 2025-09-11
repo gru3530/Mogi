@@ -41,6 +41,7 @@
 			radioButton_FirstScreen = new RadioButton();
 			radioButton_SecondScreen = new RadioButton();
 			groupBox_AutoSell = new GroupBox();
+			label_NextSellTime = new Label();
 			listBox_SellItems = new ListBox();
 			label_SellListTitle = new Label();
 			label_Interval = new Label();
@@ -376,6 +377,7 @@
 			// 
 			// groupBox_AutoSell
 			// 
+			groupBox_AutoSell.Controls.Add(label_NextSellTime);
 			groupBox_AutoSell.Controls.Add(listBox_SellItems);
 			groupBox_AutoSell.Controls.Add(label_SellListTitle);
 			groupBox_AutoSell.Controls.Add(label_Interval);
@@ -391,6 +393,15 @@
 			groupBox_AutoSell.TabIndex = 2;
 			groupBox_AutoSell.TabStop = false;
 			groupBox_AutoSell.Text = "잡템 자동 판매";
+			// 
+			// label_NextSellTime
+			// 
+			label_NextSellTime.AutoSize = true;
+			label_NextSellTime.Location = new Point(149, 28);
+			label_NextSellTime.Name = "label_NextSellTime";
+			label_NextSellTime.Size = new Size(77, 15);
+			label_NextSellTime.TabIndex = 7;
+			label_NextSellTime.Text = "NextSellTime";
 			// 
 			// listBox_SellItems
 			// 
@@ -676,5 +687,6 @@
 		private System.Windows.Forms.TableLayoutPanel tableLayoutPanel_Screen;
 		private System.Windows.Forms.RadioButton radioButton_FirstScreen;
 		private System.Windows.Forms.RadioButton radioButton_SecondScreen;
+		private Label label_NextSellTime;
 	}
 }
