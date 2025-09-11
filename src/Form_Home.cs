@@ -1,10 +1,18 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Windows.Forms;
+using MOGI;
 using static MOGI.TaskDefinition;
 
 namespace MOGI
 {
 	public partial class Form_Home : Form
 	{
+		#region 멤버 변수
 		private Form_Harvest _formHarvest;
 		private Form_Hoeing _formHoeing;
 		private Form_Mining _formMining;
@@ -17,44 +25,33 @@ namespace MOGI
 
 		private Task_Manager _taskManager;
 		private Input_Manager _inputManager;
-		private HotkeyManager _hotkeyManager;
-		private int _monitorXOffset = 0;
 
-		private TaskType _selectedLifeActivityType = TaskType.None; 
-		private Enum? _selectedDetailItem = null;
+		private TaskType _selectedLifeActivityType = TaskType.None;
+		private Enum _selectedDetailItem = null;
 
-
+		// 자동 판매 기능 관련
+		private System.Windows.Forms.Timer _sellTimer;
+		private System.Windows.Forms.Timer _statusBlinkTimer;
+		private bool _isBlinkOn = false;
+		#endregion
 
 		public Form_Home()
 		{
 			InitializeComponent();
-
 			Initialize();
-			DetectMonitorsAndSetRadioButtons();
-
-			ShowContentForm(_formWood);
-			_selectedLifeActivityType = TaskType.Woodcutting;
 		}
 
-		
-
+		#region 초기화
 		private void Initialize()
 		{
 			_taskManager = Task_Manager.Instance;
 			_inputManager = Input_Manager.Instance;
-			//_hotkeyManager = new HotkeyManager();
 
 			InitializeFormsAndEvents();
-			Initialize_UI();
-			InitializeTaskFactory();
 			InitializeLifeSkillButtons();
-			//Initialize_HotKey();
-
-			_taskManager.MousePositionChanged += TaskManager_MousePositionChanged;
-			_taskManager.CurrentTaskNameChanged += TaskManager_CurrentTaskNameChanged;
-			_taskManager.TaskProgressUpdated += TaskManager_TaskProgressUpdated;
-
-			UpdateTaskTimes(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, 0, 0);
+			InitializeTaskFactory();
+			InitializeAutoSellFeature();
+			InitializeDefaultUI();
 		}
 
 		private void InitializeFormsAndEvents()
@@ -87,54 +84,185 @@ namespace MOGI
 			{
 				AddFormToPanel(form);
 			}
+
+			_taskManager.MousePositionChanged += TaskManager_MousePositionChanged;
+			_taskManager.CurrentTaskNameChanged += TaskManager_CurrentTaskNameChanged;
+			_taskManager.TaskProgressUpdated += TaskManager_TaskProgressUpdated;
+		}
+
+		private void InitializeLifeSkillButtons()
+		{
+			tableLayoutPanel_LifeSkills.AutoScroll = true;
+			tableLayoutPanel_LifeSkills.Controls.Clear();
+			tableLayoutPanel_LifeSkills.RowStyles.Clear();
+			tableLayoutPanel_LifeSkills.ColumnStyles.Clear();
+
+			tableLayoutPanel_LifeSkills.ColumnCount = 2;
+			tableLayoutPanel_LifeSkills.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+			tableLayoutPanel_LifeSkills.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+
+			var lifeSkillTypes = Enum.GetValues(typeof(LifeActivityType)).Cast<LifeActivityType>().ToList();
+			tableLayoutPanel_LifeSkills.RowCount = (int)Math.Ceiling(lifeSkillTypes.Count / 2.0);
+
+			for (int i = 0; i < tableLayoutPanel_LifeSkills.RowCount; i++)
+			{
+				tableLayoutPanel_LifeSkills.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
+			}
+
+			for (int i = 0; i < lifeSkillTypes.Count; i++)
+			{
+				var skillType = lifeSkillTypes[i];
+				var button = new RadioButton
+				{
+					Text = GetEnumDescription(skillType),
+					Tag = (TaskType)skillType,
+					Appearance = Appearance.Button,
+					Dock = DockStyle.Fill,
+					TextAlign = ContentAlignment.MiddleCenter,
+					FlatStyle = FlatStyle.Flat,
+					FlatAppearance = { BorderSize = 0, CheckedBackColor = Color.DodgerBlue }
+				};
+				button.CheckedChanged += LifeSkillButton_CheckedChanged;
+				tableLayoutPanel_LifeSkills.Controls.Add(button, i % 2, i / 2);
+			}
+
+			// '나무 베기'를 기본으로 선택
+			foreach (RadioButton button in tableLayoutPanel_LifeSkills.Controls)
+			{
+				if ((TaskType)button.Tag == TaskType.Woodcutting)
+				{
+					button.Checked = true;
+					break;
+				}
+			}
 		}
 
 		private void InitializeTaskFactory()
 		{
 			_taskFactory = new Dictionary<TaskType, Func<Enum, BaseAutomationTask>>
-											{
-												{ TaskType.Harvest,       e => new TaskHarvest((CropType)e) },
-												{ TaskType.Hoeing,        e => new TaskHoeing((HoeingType)e) },
-												{ TaskType.Mining,        e => new TaskMining((MineralType)e) },
-												{ TaskType.Woodcutting,   e => new TaskWood((WoodType)e) },
-												{ TaskType.HerbGathering, e => new TaskHerb((HerbType)e) },
-												{ TaskType.InsectGathering, e => new TaskInsect((InsectType)e) }
-											};
+			{
+				{ TaskType.Harvest,       e => new TaskHarvest((CropType)e) },
+				{ TaskType.Hoeing,        e => new TaskHoeing((HoeingType)e) },
+				{ TaskType.Mining,        e => new TaskMining((MineralType)e) },
+				{ TaskType.Woodcutting,   e => new TaskWood((WoodType)e) },
+				{ TaskType.HerbGathering, e => new TaskHerb((HerbType)e) },
+				{ TaskType.InsectGathering, e => new TaskInsect((InsectType)e) }
+			};
 		}
 
-
-		private void InitializeLifeSkillButtons()
+		private void InitializeAutoSellFeature()
 		{
-			tableLayoutPanel1.AutoScroll = true;
+			var config = LoadSellConfigAndPopulateUi();
 
-			tableLayoutPanel1.Controls.Clear();
-			tableLayoutPanel1.RowStyles.Clear();
-			tableLayoutPanel1.RowCount = 0;
+			_sellTimer = new System.Windows.Forms.Timer();
+			_statusBlinkTimer = new System.Windows.Forms.Timer { Interval = 1500 };
 
-			var lifeSkillTypes = Enum.GetValues(typeof(LifeActivityType));
+			checkBox_ToggleAutoSell.CheckedChanged += CheckBox_ToggleAutoSell_CheckedChanged;
+			trackBar_Interval.Scroll += TrackBar_Interval_Scroll;
+			_sellTimer.Tick += SellTimer_Tick;
+			_statusBlinkTimer.Tick += StatusBlinkTimer_Tick;
 
-			foreach (LifeActivityType skillType in lifeSkillTypes)
+			trackBar_Interval.Value = 60;
+			pictureBox_Status.BackColor = Color.Crimson;
+			TrackBar_Interval_Scroll(null, null);
+		}
+
+		private void InitializeDefaultUI()
+		{
+			UpdateTaskTimes(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, 0, 0);
+			trackBar_Repetitions.Value = 1;
+			label_Repetitions.Text = $"{trackBar_Repetitions.Value} 회";
+		}
+		#endregion
+
+		#region 자동 판매 기능
+		private AppSettings LoadSellConfigAndPopulateUi()
+		{
+			AppSettings config;
+			try
 			{
-				TaskType taskType = (TaskType)skillType;
-
-				tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
-
-				var button = new RadioButton
+				string jsonString = File.ReadAllText("config.json");
+				config = JsonSerializer.Deserialize<AppSettings>(jsonString);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"설정 파일(config.json) 로드 실패: {ex.Message}");
+				config = new AppSettings
 				{
-					Text = GetEnumDescription(skillType),
-					Tag = taskType,
-					Appearance = Appearance.Button,
-					Dock = DockStyle.Fill,
-					TextAlign = ContentAlignment.MiddleCenter
+					AutoSell = new AutoSellSettings
+					{
+						JunkItemNames = new List<string>()
+					}
 				};
+			}
 
-				button.CheckedChanged += LifeSkillButton_CheckedChanged;
+			listBox_SellItems.Items.Clear();
 
-				tableLayoutPanel1.Controls.Add(button);
-				tableLayoutPanel1.RowCount++;
+			if (config?.AutoSell?.JunkItemNames != null)
+			{
+				foreach (var item in config.AutoSell.JunkItemNames)
+				{
+					listBox_SellItems.Items.Add(item);
+				}
+			}
+			return config;
+		}
+
+		private void TrackBar_Interval_Scroll(object sender, EventArgs e)
+		{
+			trackBar_Interval.Value = (trackBar_Interval.Value / 5) * 5;
+			int minutes = trackBar_Interval.Value;
+			if (minutes >= 60)
+			{
+				double hours = minutes / 60.0;
+				label_Interval.Text = $"{hours:F1} 시간마다";
+			}
+			else
+			{
+				label_Interval.Text = $"{minutes} 분마다";
 			}
 		}
 
+		private void CheckBox_ToggleAutoSell_CheckedChanged(object sender, EventArgs e)
+		{
+			if (checkBox_ToggleAutoSell.Checked)
+			{
+				_sellTimer.Interval = trackBar_Interval.Value * 60 * 1000;
+				_sellTimer.Start();
+				_statusBlinkTimer.Start();
+
+				RunSellTask();
+			}
+			else
+			{
+				_sellTimer.Stop();
+				_statusBlinkTimer.Stop();
+				_taskManager.StopSellTask(); 
+				pictureBox_Status.BackColor = Color.Crimson;
+			}
+		}
+
+		private void StatusBlinkTimer_Tick(object sender, EventArgs e)
+		{
+			pictureBox_Status.BackColor = _isBlinkOn ? Color.MediumSeaGreen : Color.DarkGreen;
+			_isBlinkOn = !_isBlinkOn;
+		}
+
+		private void SellTimer_Tick(object sender, EventArgs e)
+		{
+			RunSellTask();
+		}
+
+		private void RunSellTask()
+		{
+			if (_taskManager.IsSellTaskRunning()) return; // 이미 판매중이면 중복 실행 방지
+
+			var sellTask = new TaskSellJunkItems(ConfigManager.Instance.Settings.AutoSell.JunkItemNames);
+			_taskManager.StartSellTask(sellTask, new TaskConfig());
+		}
+		#endregion
+
+		#region UI 이벤트 핸들러
 		private void LifeSkillButton_CheckedChanged(object sender, EventArgs e)
 		{
 			var checkedRadio = sender as RadioButton;
@@ -150,184 +278,10 @@ namespace MOGI
 			}
 		}
 
-
-		private void Initialize_HotKey()
-		{
-			_hotkeyManager.HotkeyFired += HotkeyManager_HotkeyFired;
-			var keyMaps = CommonArea.GetKeyMaps();
-			foreach (var key in keyMaps.Keys)
-			{
-				_hotkeyManager.RegisterHotkey(key);
-			}
-		}
-
-		private void Initialize_UI()
-		{
-			if (label_CurrentTask != null)
-			{
-				label_CurrentTask.Text = TaskDefinition.TaskNames[TaskType.None];
-			}
-			if (trackBar1 != null)
-			{
-				trackBar1.Value = 1;
-			}
-
-			if (label_Scroll != null)
-			{
-				label_Scroll.Text = "1";
-			}
-
-			if (label_CurrentRepetition != null)
-			{
-				label_CurrentRepetition.Text = "0/0";
-			}
-
-			radioButton_SecondScreen.Checked = true;
-		}
-
-
-		private void DetectMonitorsAndSetRadioButtons()
-		{
-			Screen[] screens = Screen.AllScreens;
-
-			if (radioButton_FirstScreen != null)
-			{
-				radioButton_FirstScreen.Enabled = (screens.Length > 0);
-			}
-			if (radioButton_SecondScreen != null)
-			{
-				radioButton_SecondScreen.Enabled = (screens.Length > 1);
-			}
-
-			if (screens.Length > 1 && radioButton_SecondScreen != null)
-			{
-				radioButton_SecondScreen.Checked = true;
-				_monitorXOffset = screens[1].Bounds.X;
-			}
-			else if (screens.Length > 0 && radioButton_FirstScreen != null)
-			{
-				radioButton_FirstScreen.Checked = true;
-				_monitorXOffset = screens[0].Bounds.X;
-			}
-			else
-			{
-				_monitorXOffset = 0;
-			}
-			UpdateCommonAreaOffset();
-		}
-
-
-		private void TaskManager_MousePositionChanged(object sender, Point mousePosition)
-		{
-			if (this.InvokeRequired)
-			{
-				this.Invoke(new Action(() => UpdateMouseCoordinates(mousePosition)));
-			}
-			else
-			{
-				UpdateMouseCoordinates(mousePosition);
-			}
-		}
-
-		private void TaskManager_CurrentTaskNameChanged(object sender, string taskName)
-		{
-			if (this.InvokeRequired)
-			{
-				this.Invoke(new Action(() => UpdateTaskLabel(taskName)));
-			}
-			else
-			{
-				UpdateTaskLabel(taskName);
-			}
-		}
-
-		private void TaskManager_TaskProgressUpdated(object sender, TaskProgressEventArgs e)
-		{
-			if (this.InvokeRequired)
-			{
-				this.Invoke(new Action(() => UpdateTaskTimes(e.TotalEstimatedTime, e.ElapsedTime, e.RemainingTime, e.CurrentRepetition, e.TotalRepetitions)));
-			}
-			else
-			{
-				UpdateTaskTimes(e.TotalEstimatedTime, e.ElapsedTime, e.RemainingTime, e.CurrentRepetition, e.TotalRepetitions);
-			}
-		}
-
-		private void UpdateMouseCoordinates(Point position)
-		{
-			if (textBox_Mouse_X != null)
-			{
-				textBox_Mouse_X.Text = position.X.ToString();
-			}
-			if (textBox_Mouse_Y != null)
-			{
-				textBox_Mouse_Y.Text = position.Y.ToString();
-			}
-		}
-
-		private void UpdateTaskLabel(string taskName)
-		{
-			if (label_CurrentTask != null)
-			{
-				label_CurrentTask.Text = taskName;
-			}
-		}
-
-		private void UpdateTaskTimes(TimeSpan totalEstimated, TimeSpan elapsed, TimeSpan remaining, int currentRepetition, int totalRepetitions)
-		{
-			if (label_TotalTime != null)
-			{
-				label_TotalTime.Text = $"{totalEstimated:hh\\:mm\\:ss}";
-			}
-			if (label_ElapsedTime != null)
-			{
-				label_ElapsedTime.Text = $"{elapsed:hh\\:mm\\:ss}";
-			}
-			if (label_RemainingTime != null)
-			{
-				label_RemainingTime.Text = $"{remaining:hh\\:mm\\:ss}";
-			}
-			if (label_CurrentRepetition != null)
-			{
-				label_CurrentRepetition.Text = $"{currentRepetition}/{totalRepetitions}";
-			}
-		}
-
-		private void RadioButton_Screen_CheckedChanged(object sender, EventArgs e)
-		{
-			RadioButton? checkedRadio = sender as RadioButton;
-			if (checkedRadio != null && checkedRadio.Checked)
-			{
-				Screen[] screens = Screen.AllScreens;
-				if (checkedRadio == radioButton_FirstScreen && screens.Length > 0)
-				{
-					_monitorXOffset = 0;
-				}
-				else if (checkedRadio == radioButton_SecondScreen && screens.Length > 1)
-				{
-					_monitorXOffset = screens[0].Bounds.X;
-				}
-				else
-				{
-					_monitorXOffset = 0;
-				}
-				UpdateCommonAreaOffset();
-			}
-		}
-
-		private void UpdateCommonAreaOffset()
-		{
-			if (_inputManager != null)
-			{
-				_inputManager.SetMonitorXOffset(_monitorXOffset);
-			}
-		}
-
-		private void FormHome_ItemSelected(object? sender, Enum selectedItem)
+		private void FormHome_ItemSelected(object sender, Enum selectedItem)
 		{
 			_selectedDetailItem = selectedItem;
 		}
-
 
 		private void Button_Start_Click(object sender, EventArgs e)
 		{
@@ -338,7 +292,6 @@ namespace MOGI
 			}
 
 			BaseAutomationTask taskToStart = null;
-
 			if (_taskFactory.TryGetValue(_selectedLifeActivityType, out var factoryFunc))
 			{
 				taskToStart = factoryFunc(_selectedDetailItem);
@@ -346,9 +299,9 @@ namespace MOGI
 
 			if (taskToStart != null)
 			{
-				int repetitions = trackBar1.Value;
+				int repetitions = trackBar_Repetitions.Value;
 				TaskConfig config = new TaskConfig(repetitions, false);
-				_taskManager.StartTask(taskToStart, config);
+				_taskManager.StartMainTask(taskToStart, config);
 			}
 			else
 			{
@@ -356,21 +309,50 @@ namespace MOGI
 			}
 		}
 
-
-		private void trackBar1_Scroll(object sender, EventArgs e)
-		{
-			label_Scroll.Text = trackBar1.Value.ToString();
-		}
-
 		private void button_Stop_Click(object sender, EventArgs e)
 		{
 			_taskManager.StopAllTasks();
 		}
 
+		private void trackBar_Repetitions_Scroll(object sender, EventArgs e)
+		{
+			label_Repetitions.Text = $"{trackBar_Repetitions.Value} 회";
+		}
+		#endregion
+
+		#region TaskManager 업데이트
+		private void TaskManager_MousePositionChanged(object sender, Point e) => UpdateMouseCoordinates(e);
+		private void TaskManager_CurrentTaskNameChanged(object sender, string e) => UpdateTaskLabel(e);
+		private void TaskManager_TaskProgressUpdated(object sender, TaskProgressEventArgs e) => UpdateTaskTimes(e.TotalEstimatedTime, e.ElapsedTime, e.RemainingTime, e.CurrentRepetition, e.TotalRepetitions);
+
+		private void UpdateMouseCoordinates(Point position)
+		{
+			if (InvokeRequired) { Invoke(new Action(() => UpdateMouseCoordinates(position))); return; }
+			textBox_Mouse_X.Text = position.X.ToString();
+			textBox_Mouse_Y.Text = position.Y.ToString();
+		}
+
+		private void UpdateTaskLabel(string taskName)
+		{
+			if (InvokeRequired) { Invoke(new Action(() => UpdateTaskLabel(taskName))); return; }
+			label_CurrentTask.Text = taskName;
+		}
+
+		private void UpdateTaskTimes(TimeSpan total, TimeSpan elapsed, TimeSpan remaining, int currentRep, int totalReps)
+		{
+			if (InvokeRequired) { Invoke(new Action(() => UpdateTaskTimes(total, elapsed, remaining, currentRep, totalReps))); return; }
+			label_TotalTime.Text = $"{total:hh\\:mm\\:ss}";
+			label_ElapsedTime.Text = $"{elapsed:hh\\:mm\\:ss}";
+			label_RemainingTime.Text = $"{remaining:hh\\:mm\\:ss}";
+			label_CurrentRepetition.Text = $"{currentRep}/{totalReps}";
+		}
+		#endregion
+
+		#region 헬퍼 메서드
 		private void AddFormToPanel(Form childForm)
 		{
 			childForm.TopLevel = false;
-			childForm.FormBorderStyle = (FormBorderStyle)BorderStyle.None;
+			childForm.FormBorderStyle = FormBorderStyle.None;
 			childForm.Dock = DockStyle.Fill;
 			panel_Life.Controls.Add(childForm);
 			childForm.Hide();
@@ -381,29 +363,10 @@ namespace MOGI
 			foreach (Control control in panel_Life.Controls)
 			{
 				if (control is Form childForm)
-				{
 					childForm.Hide();
-				}
 			}
 			formToShow.Show();
-			formToShow.BringToFront();
 		}
-
-		private async void HotkeyManager_HotkeyFired(Keys key)
-		{
-			if (checkBox_KeyMapping.Checked)
-			{
-				var keyMaps = CommonArea.GetKeyMaps();
-				if (keyMaps.TryGetValue(key, out Rectangle targetArea))
-				{
-					await _inputManager.SimulateTapAsync(targetArea, _taskManager.CurrentToken);
-				}
-			}
-		}
-
-		private void Form_Home_FormClosing(object sender, FormClosingEventArgs e)
-		{
-			_hotkeyManager?.Dispose();
-		}
+		#endregion
 	}
 }
