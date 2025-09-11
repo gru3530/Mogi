@@ -16,7 +16,8 @@ namespace MOGI
 			ContentPanel = new Panel
 			{
 				Dock = DockStyle.Fill,
-				AutoScroll = true
+				AutoScroll = true,
+				BackColor = Color.FromArgb(63, 63, 70)
 			};
 
 			InitializeContentUI();
@@ -29,19 +30,25 @@ namespace MOGI
 				ColumnCount = 1,
 				Dock = DockStyle.Top,
 				AutoSize = true,
-				AutoSizeMode = AutoSizeMode.GrowAndShrink
+				AutoSizeMode = AutoSizeMode.GrowAndShrink,
+				BackColor = Color.Transparent
 			};
 			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
 			foreach (TEnum enumValue in Enum.GetValues(typeof(TEnum)))
 			{
 				tableLayoutPanel.RowCount++;
-				tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
+				tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
 				RadioButton itemButton = CreateItemButton(enumValue);
 				tableLayoutPanel.Controls.Add(itemButton, 0, tableLayoutPanel.RowCount - 1);
 			}
 
 			ContentPanel.Controls.Add(tableLayoutPanel);
+
+			if (tableLayoutPanel.Controls.Count > 0 && tableLayoutPanel.Controls[0] is RadioButton firstButton)
+			{
+				firstButton.PerformClick();
+			}
 		}
 
 		private RadioButton CreateItemButton(TEnum enumValue)
@@ -53,8 +60,18 @@ namespace MOGI
 				Appearance = Appearance.Button,
 				Dock = DockStyle.Fill,
 				TextAlign = ContentAlignment.MiddleCenter,
-				Font = new Font("맑은 고딕", 10F, FontStyle.Regular, GraphicsUnit.Point, ((byte)(129)))
+				Font = new Font("맑은 고딕", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 129),
+				FlatStyle = FlatStyle.Flat,
+				BackColor = Color.FromArgb(63, 63, 70),
+				ForeColor = Color.White,
+				FlatAppearance =
+				{
+					BorderSize = 1,
+					BorderColor = Color.FromArgb(80,80,80),
+					CheckedBackColor = Color.DodgerBlue
+				}
 			};
+
 			radioButton.Click += (sender, e) =>
 			{
 				if (sender is RadioButton clickedButton && clickedButton.Tag is TEnum selectedItem)
