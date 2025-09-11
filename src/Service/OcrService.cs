@@ -20,7 +20,56 @@ namespace MOGI
 
 		public List<TextRecognitionResult> RecognizeText(Rectangle area)
 		{
-			return null;
+			var results = new List<TextRecognitionResult>();
+
+			using (var bmp = new Bitmap(area.Width, area.Height))
+			{
+				using (var g = Graphics.FromImage(bmp))
+				{
+					g.CopyFromScreen(area.Location, Point.Empty, area.Size);
+				}
+
+				using (var preprocessedBmp = PreprocessImage(bmp))
+				{
+					Pix pix = null;
+					try
+					{
+						using (var ms = new MemoryStream())
+						{
+							preprocessedBmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+							pix = Pix.LoadFromMemory(ms.ToArray());
+						}
+
+						using (var page = _engine.Process(pix, PageSegMode.Auto))
+						{
+							using (var iter = page.GetIterator())
+							{
+								iter.Begin();
+								do
+								{
+									if (iter.TryGetBoundingBox(PageIteratorLevel.Block, out var rect))
+									{
+										var text = iter.GetText(PageIteratorLevel.Block)?.Trim().Replace("\n", " ");
+										if (!string.IsNullOrEmpty(text))
+										{
+											results.Add(new TextRecognitionResult
+											{
+												Text = text,
+												Bounds = new Rectangle(area.X + rect.X1, area.Y + rect.Y1, rect.Width, rect.Height)
+											});
+										}
+									}
+								} while (iter.Next(PageIteratorLevel.Block));
+							}
+						}
+					}
+					finally
+					{
+						pix?.Dispose();
+					}
+				}
+			}
+			return results;
 		}
 		private Bitmap PreprocessImage(Bitmap source)
 		{
