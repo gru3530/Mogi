@@ -14,7 +14,7 @@ namespace MOGI
 			DelayTimeAfterRepetition = TimeSpan.Zero;
 		}
 
-		protected override Task ExecuteSingleRepetitionAsync()
+		public override Task ExecuteSingleRepetitionAsync()
 		{
 			UpdateCurrentTaskName(TaskType.None);
 			return Task.CompletedTask;

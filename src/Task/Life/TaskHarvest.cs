@@ -17,7 +17,7 @@ namespace MOGI
 			_selectedCropType = selectedCropType;
 		}
 
-		protected override async Task ExecuteSingleRepetitionAsync()
+		public override async Task ExecuteSingleRepetitionAsync()
 		{
 			UpdateCurrentTaskName(TaskType.Harvest);
 

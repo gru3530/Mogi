@@ -21,15 +21,15 @@ namespace MOGI
 			_junkItemNames = junkItemNames;
 		}
 
-		protected override async Task ExecuteSingleRepetitionAsync()
+		public override async Task ExecuteSingleRepetitionAsync()
 		{
 			OnTaskNameChanged?.Invoke(this.TaskName);
 
 			var uiController = new UiController(Input_Manager.Instance, _token);
 
-			await Input_Manager.Instance.SimulateKeyPress(Keys.I, _token);
+			//await Input_Manager.Instance.SimulateKeyPress(Keys.I, _token);
 
-			var inventoryArea = new Rectangle(500, 200, 1000, 800);
+			var inventoryArea = new Rectangle(1040, 170, 790, 900);
 			var recognizedItems = _ocrService.RecognizeText(inventoryArea);
 
 			foreach (var itemToSell in _junkItemNames)

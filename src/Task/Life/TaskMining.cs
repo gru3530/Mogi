@@ -17,7 +17,7 @@ namespace MOGI
 			_selectedMineralType = selectedMineralType;
 		}
 
-		protected override async Task ExecuteSingleRepetitionAsync()
+		public override async Task ExecuteSingleRepetitionAsync()
 		{
 			UpdateCurrentTaskName(TaskType.Mining);
 
