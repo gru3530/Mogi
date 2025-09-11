@@ -215,15 +215,30 @@ namespace MOGI
 		private void TrackBar_Interval_Scroll(object sender, EventArgs e)
 		{
 			trackBar_Interval.Value = (trackBar_Interval.Value / 5) * 5;
-			int minutes = trackBar_Interval.Value;
-			if (minutes >= 60)
+			int totalMinutes = trackBar_Interval.Value;
+
+			if (totalMinutes >= 60)
 			{
-				double hours = minutes / 60.0;
-				label_Interval.Text = $"{hours:F1} 시간마다";
+				int hours = totalMinutes / 60;
+				int remainingMinutes = totalMinutes % 60;
+
+				if (remainingMinutes == 0)
+				{
+					label_Interval.Text = $"{hours}시간마다";
+				}
+				else
+				{
+					label_Interval.Text = $"{hours}시간 {remainingMinutes}분마다";
+				}
 			}
 			else
 			{
-				label_Interval.Text = $"{minutes} 분마다";
+				label_Interval.Text = $"{totalMinutes}분마다";
+			}
+
+			if (_sellTimer.Enabled)
+			{
+				_sellTimer.Interval = totalMinutes * 60 * 1000;
 			}
 		}
 

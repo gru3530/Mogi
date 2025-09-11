@@ -186,7 +186,7 @@
 			trackBar_Repetitions.TabIndex = 0;
 			trackBar_Repetitions.TickFrequency = 30;
 			trackBar_Repetitions.Value = 1;
-			trackBar_Repetitions.Scroll += TrackBar_Interval_Scroll;
+			trackBar_Repetitions.Scroll += trackBar_Repetitions_Scroll;
 			// 
 			// groupBox_Details
 			// 
@@ -434,7 +434,7 @@
 			trackBar_Interval.TabIndex = 3;
 			trackBar_Interval.TickFrequency = 30;
 			trackBar_Interval.Value = 60;
-			trackBar_Interval.Scroll += trackBar_Repetitions_Scroll;
+			trackBar_Interval.Scroll += TrackBar_Interval_Scroll;
 			// 
 			// label_IntervalTitle
 			// 
