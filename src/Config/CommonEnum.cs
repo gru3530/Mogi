@@ -81,3 +81,15 @@ public enum InsectType
 	[Description("차가운 빛 무리")] ColdLight,
 	[Description("삭막한 곤충 무리")] BleakInsect
 }
+
+public enum ButtonType
+{
+	[Description("판매")]
+	Sell,
+
+	[Description("최대")]
+	Max,
+
+	[Description("판매하기")]
+	SellConfirm
+}

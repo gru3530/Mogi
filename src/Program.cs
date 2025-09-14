@@ -30,11 +30,13 @@ namespace MOGI
 			}
 
 			var config = ConfigManager.Instance;
+			var assets = AssetManager.Instance;
 
 			Task_Manager.Instance.InitializeAndStartServices();
 			Application.Run(new Form_Main());
 
 			Task_Manager.Instance.ShutdownServices();
+			AssetManager.Instance.Dispose();
 		}
 
 		static bool IsAdministrator()

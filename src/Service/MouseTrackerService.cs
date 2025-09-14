@@ -1,10 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-
-namespace MOGI
+﻿namespace MOGI
 {
 	public class MouseTrackerService
 	{
@@ -25,10 +19,10 @@ namespace MOGI
 		{
 			if (_trackingTask != null && !_trackingTask.IsCompleted)
 			{
-				return; // 이미 트래킹 중이면 시작하지 않음
+				return;
 			}
 
-			_cts = new CancellationTokenSource(); // 새로운 시작을 위해 CTS 재활용
+			_cts = new CancellationTokenSource();
 			_trackingTask = Task.Run(() => TrackMouseLoop(_cts.Token), _cts.Token);
 		}
 
@@ -53,7 +47,7 @@ namespace MOGI
 					_lastPosition = currentPosition;
 				}
 
-				await Task.Delay(50, token); // 50ms마다 위치 확인
+				await Task.Delay(50, token);
 			}
 		}
 	}

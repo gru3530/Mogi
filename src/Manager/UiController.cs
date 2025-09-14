@@ -1,8 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.Threading;
-using System.Threading.Tasks;
-using static MOGI.CommonArea;
+﻿using static MOGI.CommonArea;
 
 namespace MOGI
 {
@@ -82,7 +78,7 @@ namespace MOGI
 			await _inputManager.SimulateDrag(start, end, _token, durationSeconds: 0.25);
 		}
 		
-private async Task ScrollToBottom()
+		private async Task ScrollToBottom()
 		{
 			Point start = _inputManager.GetRandomPointInBox(DefaultSlotAreas[3]);
 			Point end = new Point(start.X, start.Y - BottomScrollDistance);
@@ -90,6 +86,30 @@ private async Task ScrollToBottom()
 			await _inputManager.SimulateFlick(start, end, _token, durationSeconds: 0.2);
 
 			await _inputManager.RandomDelay(500, 700, _token);
+		}
+
+		public async Task<bool> FindAndClickTemplate(string templateName, float threshold = 0.9f)
+		{
+			var visionService = new VisionService();
+
+			var matchResult = visionService.FindTemplateOnScreen(templateName, threshold);
+
+			if (matchResult != null)
+			{
+				await this.ClickArea(matchResult.Bounds);
+				await Input_Manager.Instance.RandomDelay(300, 500, _token);
+				return true;
+			}
+
+			Console.WriteLine($"{templateName} 버튼을 화면에서 찾지 못했습니다.");
+			return false;
+		}
+
+		public async Task<bool> FindAndClickTemplate(ButtonType buttonType, float threshold = 0.9f)
+		{
+			string templateName = TaskDefinition.GetEnumDescription(buttonType);
+
+			return await FindAndClickTemplate(templateName, threshold);
 		}
 	}
 }
