@@ -46,5 +46,32 @@ namespace MOGI
 				MessageBox.Show($"{ConfigFileName} 파일 저장에 실패했습니다: {ex.Message}");
 			}
 		}
+
+		public (List<string> ValidItems, List<string> InvalidItems) ValidateAndGetSellList()
+		{
+			var validItems = new List<string>();
+			var invalidItems = new List<string>();
+
+			var assetManager = AssetManager.Instance;
+			var configItems = this.Settings.AutoSell?.JunkItemNames ?? new List<string>();
+
+			var buttonNames = Enum.GetValues(typeof(ButtonType))
+								  .Cast<ButtonType>()
+								  .Select(e => TaskDefinition.GetEnumDescription(e))
+								  .ToList();
+
+			foreach (var itemName in configItems)
+			{
+				if (assetManager.ItemTemplateNames.Contains(itemName) && !buttonNames.Contains(itemName))
+				{
+					validItems.Add(itemName);
+				}
+				else
+				{
+					invalidItems.Add(itemName);
+				}
+			}
+			return (validItems, invalidItems);
+		}
 	}
 }

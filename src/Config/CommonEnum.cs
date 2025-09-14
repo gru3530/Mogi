@@ -86,10 +86,8 @@ public enum ButtonType
 {
 	[Description("판매")]
 	Sell,
-
 	[Description("최대")]
 	Max,
-
 	[Description("판매하기")]
 	SellConfirm
 }

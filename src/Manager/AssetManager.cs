@@ -8,11 +8,15 @@ namespace MOGI
 		private static readonly Lazy<AssetManager> _instance = new Lazy<AssetManager>(() => new AssetManager());
 		public static AssetManager Instance => _instance.Value;
 
+		public List<string> ItemTemplateNames { get; private set; }
+		public List<string> ButtonTemplateNames { get; private set; }
 		public Dictionary<string, Mat> ItemTemplates { get; private set; }
 		public Dictionary<string, Mat> ButtonTemplates { get; private set; }
 
 		private AssetManager()
 		{
+			ItemTemplateNames = new List<string>();
+			ButtonTemplateNames = new List<string>();
 			ItemTemplates = new Dictionary<string, Mat>();
 			ButtonTemplates = new Dictionary<string, Mat>();
 			LoadTemplatesFromDisk();
@@ -23,6 +27,7 @@ namespace MOGI
 			string templateDir = "templates";
 			if (!Directory.Exists(templateDir)) return;
 
+
 			foreach (var filePath in Directory.GetFiles(templateDir, "*.png"))
 			{
 				string fileName = Path.GetFileNameWithoutExtension(filePath);
@@ -31,10 +36,12 @@ namespace MOGI
 				if (fileName.Contains("_button"))
 				{
 					ButtonTemplates[fileName] = templateMat;
+					ButtonTemplateNames.Add(fileName);
 				}
 				else
 				{
 					ItemTemplates[fileName] = templateMat;
+					ItemTemplateNames.Add(fileName);
 				}
 			}
 		}

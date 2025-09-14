@@ -1,13 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using MOGI;
-using static MOGI.TaskDefinition;
+﻿using static MOGI.TaskDefinition;
 
 namespace MOGI
 {
@@ -91,21 +82,21 @@ namespace MOGI
 
 		private void InitializeLifeSkillButtons()
 		{
-			tableLayoutPanel_LifeSkills.AutoScroll = true;
-			tableLayoutPanel_LifeSkills.Controls.Clear();
-			tableLayoutPanel_LifeSkills.RowStyles.Clear();
-			tableLayoutPanel_LifeSkills.ColumnStyles.Clear();
+			this.tableLayoutPanel_LifeSkills.AutoScroll = true;
+			this.tableLayoutPanel_LifeSkills.Controls.Clear();
+			this.tableLayoutPanel_LifeSkills.RowStyles.Clear();
+			this.tableLayoutPanel_LifeSkills.ColumnStyles.Clear();
 
-			tableLayoutPanel_LifeSkills.ColumnCount = 2;
-			tableLayoutPanel_LifeSkills.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-			tableLayoutPanel_LifeSkills.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+			this.tableLayoutPanel_LifeSkills.ColumnCount = 2;
+			this.tableLayoutPanel_LifeSkills.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+			this.tableLayoutPanel_LifeSkills.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
 
 			var lifeSkillTypes = Enum.GetValues(typeof(LifeActivityType)).Cast<LifeActivityType>().ToList();
-			tableLayoutPanel_LifeSkills.RowCount = (int)Math.Ceiling(lifeSkillTypes.Count / 2.0);
+			this.tableLayoutPanel_LifeSkills.RowCount = (int)Math.Ceiling(lifeSkillTypes.Count / 2.0);
 
 			for (int i = 0; i < tableLayoutPanel_LifeSkills.RowCount; i++)
 			{
-				tableLayoutPanel_LifeSkills.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
+				this.tableLayoutPanel_LifeSkills.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
 			}
 
 			for (int i = 0; i < lifeSkillTypes.Count; i++)
@@ -122,10 +113,10 @@ namespace MOGI
 					FlatAppearance = { BorderSize = 0, CheckedBackColor = Color.DodgerBlue }
 				};
 				button.CheckedChanged += LifeSkillButton_CheckedChanged;
-				tableLayoutPanel_LifeSkills.Controls.Add(button, i % 2, i / 2);
+				this.tableLayoutPanel_LifeSkills.Controls.Add(button, i % 2, i / 2);
 			}
 
-			foreach (RadioButton button in tableLayoutPanel_LifeSkills.Controls)
+			foreach (RadioButton button in this.tableLayoutPanel_LifeSkills.Controls)
 			{
 				if ((TaskType)button.Tag == TaskType.Woodcutting)
 				{
@@ -171,37 +162,37 @@ namespace MOGI
 				}
 			}
 
-			var autoSellSettings = _configManager.Settings.AutoSell;
-			listBox_SellItems.Items.Clear();
-			if (autoSellSettings?.JunkItemNames != null)
-			{
-				foreach (var item in autoSellSettings.JunkItemNames)
-				{
-					listBox_SellItems.Items.Add(item);
-				}
-			}
-
 			_sellTimer = new System.Windows.Forms.Timer();
 			_statusBlinkTimer = new System.Windows.Forms.Timer { Interval = 1500 };
 			_countdownTimer = new System.Windows.Forms.Timer { Interval = 1000 };
 
-			checkBox_ToggleAutoSell.CheckedChanged += CheckBox_ToggleAutoSell_CheckedChanged;
-			trackBar_Interval.Scroll += TrackBar_Interval_Scroll;
+			this.trackBar_Interval.Value = 60;
+			this.pictureBox_Status.BackColor = Color.Crimson;
+			TrackBar_Interval_Scroll(null, null);
+
+			var autoSellSettings = _configManager.Settings.AutoSell;
+			this.listBox_SellItems.Items.Clear();
+			if (autoSellSettings?.JunkItemNames != null)
+			{
+				foreach (var item in autoSellSettings.JunkItemNames)
+				{
+					this.listBox_SellItems.Items.Add(item);
+				}
+			}
+
+			this.checkBox_ToggleAutoSell.CheckedChanged += CheckBox_ToggleAutoSell_CheckedChanged;
+			this.trackBar_Interval.Scroll += TrackBar_Interval_Scroll;
 			_sellTimer.Tick += SellTimer_Tick;
 			_statusBlinkTimer.Tick += StatusBlinkTimer_Tick;
 			_countdownTimer.Tick += CountdownTimer_Tick;
-
-			trackBar_Interval.Value = 60;
-			pictureBox_Status.BackColor = Color.Crimson;
-			TrackBar_Interval_Scroll(null, null);
 		}
 
 		private void InitializeDefaultUI()
 		{
 			UpdateTaskTimes(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, 0, 0);
-			trackBar_Repetitions.Value = 1;
-			label_Repetitions.Text = $"{trackBar_Repetitions.Value} 회";
-			label_NextSellTime.Text = "";
+			this.trackBar_Repetitions.Value = 1;
+			this.label_Repetitions.Text = $"{trackBar_Repetitions.Value} 회";
+			this.label_NextSellTime.Text = "";
 		}
 
 		private void TaskManager_MainTaskStateChanged(MainTaskState newState)
@@ -220,7 +211,7 @@ namespace MOGI
 				_sellTimer.Interval = trackBar_Interval.Value * 60 * 1000;
 				_sellTimer.Start();
 				_countdownTimer.Start();
-				pictureBox_Status.BackColor = Color.MediumSeaGreen;
+				this.pictureBox_Status.BackColor = Color.MediumSeaGreen;
 				_taskManager.RequestSellTask();
 			}
 			else
@@ -228,7 +219,7 @@ namespace MOGI
 				_sellTimer.Stop();
 				_countdownTimer.Stop();
 				_statusBlinkTimer.Stop();
-				pictureBox_Status.BackColor = Color.Crimson;
+				this.pictureBox_Status.BackColor = Color.Crimson;
 				label_NextSellTime.Text = "";
 			}
 		}
@@ -245,12 +236,12 @@ namespace MOGI
 			{
 				_remainingSellTime = _remainingSellTime.Subtract(TimeSpan.FromSeconds(1));
 			}
-			label_NextSellTime.Text = $"다음 판매: {_remainingSellTime:mm\\:ss}";
+			this.label_NextSellTime.Text = $"다음 판매: {_remainingSellTime:mm\\:ss}";
 		}
 
 		private void StatusBlinkTimer_Tick(object sender, EventArgs e)
 		{
-			pictureBox_Status.BackColor = _isBlinkOn ? Color.MediumSeaGreen : Color.DarkGreen;
+			this.pictureBox_Status.BackColor = _isBlinkOn ? Color.MediumSeaGreen : Color.DarkGreen;
 			_isBlinkOn = !_isBlinkOn;
 		}
 
@@ -299,20 +290,20 @@ namespace MOGI
 
 		private void trackBar_Repetitions_Scroll(object sender, EventArgs e)
 		{
-			label_Repetitions.Text = $"{trackBar_Repetitions.Value} 회";
+			this.label_Repetitions.Text = $"{trackBar_Repetitions.Value} 회";
 		}
 
 		private void TrackBar_Interval_Scroll(object sender, EventArgs e)
 		{
-			trackBar_Interval.Value = (trackBar_Interval.Value / 5) * 5;
+			this.trackBar_Interval.Value = (trackBar_Interval.Value / 5) * 5;
 			int minutes = trackBar_Interval.Value;
 			if (minutes >= 60)
 			{
-				label_Interval.Text = $"{minutes / 60.0:F1} 시간마다";
+				this.label_Interval.Text = $"{minutes / 60.0:F1} 시간마다";
 			}
 			else
 			{
-				label_Interval.Text = $"{minutes} 분마다";
+				this.label_Interval.Text = $"{minutes} 분마다";
 			}
 
 			if (_sellTimer.Enabled)
@@ -329,23 +320,23 @@ namespace MOGI
 		private void UpdateMouseCoordinates(Point position)
 		{
 			if (InvokeRequired) { Invoke(new Action(() => UpdateMouseCoordinates(position))); return; }
-			textBox_Mouse_X.Text = position.X.ToString();
-			textBox_Mouse_Y.Text = position.Y.ToString();
+			this.textBox_Mouse_X.Text = position.X.ToString();
+			this.textBox_Mouse_Y.Text = position.Y.ToString();
 		}
 
 		private void UpdateTaskLabel(string taskName)
 		{
 			if (InvokeRequired) { Invoke(new Action(() => UpdateTaskLabel(taskName))); return; }
-			label_CurrentTask.Text = taskName;
+			this.label_CurrentTask.Text = taskName;
 		}
 
 		private void UpdateTaskTimes(TimeSpan total, TimeSpan elapsed, TimeSpan remaining, int currentRep, int totalReps)
 		{
 			if (InvokeRequired) { Invoke(new Action(() => UpdateTaskTimes(total, elapsed, remaining, currentRep, totalReps))); return; }
-			label_TotalTime.Text = $"{total:hh\\:mm\\:ss}";
-			label_ElapsedTime.Text = $"{elapsed:hh\\:mm\\:ss}";
-			label_RemainingTime.Text = $"{remaining:hh\\:mm\\:ss}";
-			label_CurrentRepetition.Text = $"{currentRep}/{totalReps}";
+			this.label_TotalTime.Text = $"{total:hh\\:mm\\:ss}";
+			this.label_ElapsedTime.Text = $"{elapsed:hh\\:mm\\:ss}";
+			this.label_RemainingTime.Text = $"{remaining:hh\\:mm\\:ss}";
+			this.label_CurrentRepetition.Text = $"{currentRep}/{totalReps}";
 		}
 
 		private void AddFormToPanel(Form childForm)
