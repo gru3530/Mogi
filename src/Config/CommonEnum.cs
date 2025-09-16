@@ -13,9 +13,6 @@ public enum AreaType
 	[Description("이동 시작")] LocationMove,
 	[Description("장면넘기기")] Skip,
 	[Description("계속 열기")] Open,
-	[Description("판매 버튼")] SellButton,
-	[Description("최대 버튼")] MaxButton,
-	[Description("판매하기 버튼")] ConfirmSellButton,
 }
 
 public enum CropType
@@ -84,10 +81,23 @@ public enum InsectType
 
 public enum ButtonType
 {
+	[Description("메뉴")]
+	Menu,
+	[Description("가방")]
+	Bag,
 	[Description("판매")]
 	Sell,
 	[Description("최대")]
 	Max,
 	[Description("판매하기")]
 	SellConfirm
+}
+
+public enum SearchAreaType
+{
+	[Description("인벤토리 아이템 그리드 영역")]
+	InventoryGrid,
+
+	[Description("메뉴 버튼이 포함된 상단 영역")]
+	TopMenu
 }

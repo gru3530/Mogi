@@ -1,4 +1,9 @@
-﻿using static MOGI.CommonArea;
+﻿using System;
+using System.Drawing;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace MOGI
 {
@@ -6,6 +11,8 @@ namespace MOGI
 	{
 		private readonly Input_Manager _inputManager;
 		private readonly CancellationToken _token;
+		private readonly VisionService _visionService;
+
 		private const int BottomPaddingY = 30;
 		private const int BottomScrollDistance = 500;
 
@@ -13,6 +20,7 @@ namespace MOGI
 		{
 			_inputManager = inputManager;
 			_token = token;
+			_visionService = new VisionService();
 		}
 
 		public async Task ClickArea(Rectangle targetArea)
@@ -22,7 +30,7 @@ namespace MOGI
 
 		public async Task ClickArea<TEnum>(TEnum areaType) where TEnum : Enum
 		{
-			Rectangle targetArea = GetArea(areaType);
+			Rectangle targetArea = CommonArea.GetArea(areaType);
 			await ClickArea(targetArea);
 		}
 
@@ -37,27 +45,21 @@ namespace MOGI
 				throw new ArgumentException($"아이템 '{itemToSelect}'를 찾을 수 없습니다.");
 			}
 
-			int visibleSlotsCount = DefaultSlotAreas.Count;
+			int visibleSlotsCount = CommonArea.DefaultSlotAreas.Count;
 
 			if (itemIndex < visibleSlotsCount)
 			{
-				await ClickArea(DefaultSlotAreas[itemIndex]);
+				await ClickArea(CommonArea.DefaultSlotAreas[itemIndex]);
 				return;
 			}
 
 			if (itemIndex >= totalItems - visibleSlotsCount)
 			{
 				await ScrollToBottom();
-
+				await WaitForUiStability();
 				int slotIndexAfterScroll = itemIndex - (totalItems - visibleSlotsCount);
-				Rectangle originalRect = DefaultSlotAreas[slotIndexAfterScroll];
-				Rectangle adjustedRect = new Rectangle(
-					originalRect.X,
-					originalRect.Y - BottomPaddingY,
-					originalRect.Width,
-					originalRect.Height
-				);
-
+				Rectangle originalRect = CommonArea.DefaultSlotAreas[slotIndexAfterScroll];
+				Rectangle adjustedRect = new Rectangle(originalRect.X, originalRect.Y - BottomPaddingY, originalRect.Width, originalRect.Height);
 				await ClickArea(adjustedRect);
 			}
 			else
@@ -66,38 +68,22 @@ namespace MOGI
 				for (int i = 0; i < itemsToScroll; i++)
 				{
 					await PerformUnitScroll();
-					await _inputManager.RandomDelay(150, 250, _token);
+					await WaitForUiStability();
 				}
-				await ClickArea(DefaultSlotAreas[visibleSlotsCount - 1]);
+				await ClickArea(CommonArea.DefaultSlotAreas[visibleSlotsCount - 1]);
 			}
 		}
 
-		private async Task PerformUnitScroll()
+		public async Task<bool> FindAndClickTemplate(ButtonType buttonType, Rectangle? searchArea = null, float threshold = 0.9f)
 		{
-			var (start, end) = _inputManager.GetPreciseDragPoints(DefaultSlotAreas[2], DefaultSlotAreas[1]);
-			await _inputManager.SimulateDrag(start, end, _token, durationSeconds: 0.25);
-		}
-		
-		private async Task ScrollToBottom()
-		{
-			Point start = _inputManager.GetRandomPointInBox(DefaultSlotAreas[3]);
-			Point end = new Point(start.X, start.Y - BottomScrollDistance);
+			string templateName = TaskDefinition.GetEnumDescription(buttonType);
+			Rectangle finalSearchArea = searchArea ?? Screen.PrimaryScreen.Bounds;
 
-			await _inputManager.SimulateFlick(start, end, _token, durationSeconds: 0.2);
+			var match = _visionService.FindButtonMatch(finalSearchArea, templateName, threshold);
 
-			await _inputManager.RandomDelay(500, 700, _token);
-		}
-
-		public async Task<bool> FindAndClickTemplate(string templateName, float threshold = 0.9f)
-		{
-			var visionService = new VisionService();
-
-			var matchResult = visionService.FindTemplateOnScreen(templateName, threshold);
-
-			if (matchResult != null)
+			if (match != null)
 			{
-				await this.ClickArea(matchResult.Bounds);
-				await Input_Manager.Instance.RandomDelay(300, 500, _token);
+				await this.ClickArea(match.Bounds);
 				return true;
 			}
 
@@ -105,11 +91,25 @@ namespace MOGI
 			return false;
 		}
 
-		public async Task<bool> FindAndClickTemplate(ButtonType buttonType, float threshold = 0.9f)
-		{
-			string templateName = TaskDefinition.GetEnumDescription(buttonType);
 
-			return await FindAndClickTemplate(templateName, threshold);
+		public async Task WaitForUiStability()
+		{
+			var watchArea = CommonArea.GetArea(SearchAreaType.InventoryGrid);
+			await _visionService.WaitForUiStability(watchArea, _token);
+		}
+
+		private async Task PerformUnitScroll()
+		{
+			var (start, end) = _inputManager.GetPreciseDragPoints(CommonArea.DefaultSlotAreas[2], CommonArea.DefaultSlotAreas[1]);
+			await _inputManager.SimulateDrag(start, end, _token, durationSeconds: 0.25);
+		}
+
+		private async Task ScrollToBottom()
+		{
+			Point start = _inputManager.GetRandomPointInBox(CommonArea.DefaultSlotAreas[3]);
+			Point end = new Point(start.X, start.Y - BottomScrollDistance);
+			await _inputManager.SimulateFlick(start, end, _token, durationSeconds: 0.2);
+			await _inputManager.RandomDelay(500, 700, _token);
 		}
 	}
 }

@@ -19,35 +19,56 @@ namespace MOGI
 		public override async Task ExecuteSingleRepetitionAsync()
 		{
 			OnTaskNameChanged?.Invoke(this.TaskName);
+			var menuArea = CommonArea.GetArea(SearchAreaType.TopMenu);
 
-			await Input_Manager.Instance.SimulateKeyPress(Keys.I, _token);
-
-			var inventoryArea = new Rectangle(1040, 170, 790, 900);
-
-			foreach (var templatePair in AssetManager.Instance.ItemTemplates)
+			try
 			{
-				string itemName = templatePair.Key;
-				Mat itemTemplateMat = templatePair.Value;
-
-				var matches = _visionService.FindAllMatches(inventoryArea, itemTemplateMat, 0.90f);
-
-				if (matches.Any())
+				if (!await _uiController.FindAndClickTemplate(ButtonType.Menu, menuArea) ||
+	!await _uiController.FindAndClickTemplate(ButtonType.Bag, menuArea))
 				{
-					var foundItem = matches.First();
-					await _uiController.ClickArea(foundItem.Bounds);
-					await Input_Manager.Instance.RandomDelay(500, 700, _token);
+					return;
+				}
+			}
+			catch(Exception ex)
+			{
 
-					if (await _uiController.FindAndClickTemplate(ButtonType.Sell))
+			}
+
+
+			await Input_Manager.Instance.RandomDelay(200, 300, _token);
+			var inventoryArea = CommonArea.GetArea(SearchAreaType.InventoryGrid);
+			Mat inventoryScreen = null;
+
+			try
+			{
+				inventoryScreen = _visionService.CaptureScreenMat(inventoryArea);
+
+				foreach (var itemName in _junkItemNames)
+				{
+					MatchResult match = _visionService.FindItemMatch(inventoryScreen, itemName, 0.8f);
+					if (match != null)
 					{
-						if (await _uiController.FindAndClickTemplate(ButtonType.Max))
+						Rectangle itemRect = match.Bounds;
+						itemRect.Offset(inventoryArea.Location);
+						await _uiController.ClickArea(itemRect);
+
+						if (await _uiController.FindAndClickTemplate(ButtonType.Sell) &&
+							await _uiController.FindAndClickTemplate(ButtonType.Max) &&
+							await _uiController.FindAndClickTemplate(ButtonType.SellConfirm))
 						{
-							await _uiController.FindAndClickTemplate(ButtonType.SellConfirm);
+							inventoryScreen.Dispose();
+							await _uiController.WaitForUiStability();
+							inventoryScreen = _visionService.CaptureScreenMat(inventoryArea);
 						}
 					}
 				}
 			}
+			finally
+			{
+				inventoryScreen?.Dispose();
+			}
 
-			await Input_Manager.Instance.SimulateKeyPress(Keys.I, _token);
+			await Input_Manager.Instance.SimulateKeyPress(Keys.Escape, _token);
 		}
 	}
 }

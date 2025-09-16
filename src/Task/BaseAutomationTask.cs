@@ -1,8 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.Threading;
-using System.Threading.Tasks;
-using static MOGI.TaskDefinition;
+﻿using static MOGI.TaskDefinition;
 
 namespace MOGI
 {

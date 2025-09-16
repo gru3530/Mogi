@@ -155,7 +155,7 @@ namespace MOGI
 					{
 						AutoSell = new AutoSellSettings
 						{
-							JunkItemNames = new List<string> { "통나무", "상급 통나무", "나뭇가지", "최상급 통나무", "나무 진액" }
+							JunkItemNames = new List<string> {"나뭇가지", "최상급 통나무", "장수풍뎅이"  }
 						}
 					};
 					_configManager.SaveSettings(defaultConfig);

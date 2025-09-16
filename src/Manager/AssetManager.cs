@@ -1,4 +1,7 @@
-﻿using Emgu.CV;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using Emgu.CV;
 using Emgu.CV.CvEnum;
 
 namespace MOGI
@@ -8,48 +11,61 @@ namespace MOGI
 		private static readonly Lazy<AssetManager> _instance = new Lazy<AssetManager>(() => new AssetManager());
 		public static AssetManager Instance => _instance.Value;
 
-		public List<string> ItemTemplateNames { get; private set; }
-		public List<string> ButtonTemplateNames { get; private set; }
-		public Dictionary<string, Mat> ItemTemplates { get; private set; }
-		public Dictionary<string, Mat> ButtonTemplates { get; private set; }
+		public Dictionary<string, Mat> ItemTemplates { get; } = new Dictionary<string, Mat>();
+		public Dictionary<string, Mat> ButtonTemplates { get; } = new Dictionary<string, Mat>();
+		public Dictionary<string, Mat> SpecificMasks { get; } = new Dictionary<string, Mat>();
 
 		private AssetManager()
 		{
-			ItemTemplateNames = new List<string>();
-			ButtonTemplateNames = new List<string>();
-			ItemTemplates = new Dictionary<string, Mat>();
-			ButtonTemplates = new Dictionary<string, Mat>();
 			LoadTemplatesFromDisk();
 		}
 
 		private void LoadTemplatesFromDisk()
 		{
-			string templateDir = "templates";
-			if (!Directory.Exists(templateDir)) return;
+			string baseDir = "Resource";
+			var itemsToLoad = new HashSet<string>(ConfigManager.Instance.Settings.AutoSell.JunkItemNames);
 
+			LoadAssetsFromDirectory(Path.Combine(baseDir, "Buttons"), ButtonTemplates, ImreadModes.AnyColor);
+			LoadAssetsFromDirectory(Path.Combine(baseDir, "Items"), ItemTemplates, ImreadModes.AnyColor, name => itemsToLoad.Contains(name));
+			LoadAssetsFromDirectory(Path.Combine(baseDir, "Masks"), SpecificMasks, ImreadModes.Grayscale);
+		}
 
-			foreach (var filePath in Directory.GetFiles(templateDir, "*.png"))
+		private void LoadAssetsFromDirectory(string directoryPath, Dictionary<string, Mat> targetDictionary, ImreadModes mode, Func<string, bool> filter = null)
+		{
+			if (!Directory.Exists(directoryPath)) return;
+
+			foreach (var filePath in Directory.GetFiles(directoryPath, "*.png"))
 			{
 				string fileName = Path.GetFileNameWithoutExtension(filePath);
-				Mat templateMat = CvInvoke.Imread(filePath, ImreadModes.AnyColor);
-
-				if (fileName.Contains("_button"))
+				if (filter != null && !filter(fileName))
 				{
-					ButtonTemplates[fileName] = templateMat;
-					ButtonTemplateNames.Add(fileName);
+					continue;
 				}
-				else
+
+				using (Mat sourceMat = CvInvoke.Imread(filePath, mode))
 				{
-					ItemTemplates[fileName] = templateMat;
-					ItemTemplateNames.Add(fileName);
+					if (sourceMat.IsEmpty) continue;
+
+					if (mode != ImreadModes.Grayscale)
+					{
+						Mat grayMat = new Mat();
+						CvInvoke.CvtColor(sourceMat, grayMat, ColorConversion.Bgr2Gray);
+						targetDictionary[fileName] = grayMat;
+					}
+					else
+					{
+						targetDictionary[fileName] = sourceMat.Clone();
+					}
 				}
 			}
 		}
 
 		public void Dispose()
 		{
+			// 관리하는 모든 Mat 객체를 Dispose
 			foreach (var mat in ItemTemplates.Values) mat.Dispose();
 			foreach (var mat in ButtonTemplates.Values) mat.Dispose();
+			foreach (var mat in SpecificMasks.Values) mat.Dispose();
 		}
 	}
 }

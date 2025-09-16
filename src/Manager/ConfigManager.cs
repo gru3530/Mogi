@@ -1,4 +1,7 @@
-﻿using System.Text.Json;
+﻿using System.Linq;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 
 namespace MOGI
 {
@@ -35,7 +38,12 @@ namespace MOGI
 		{
 			try
 			{
-				var options = new JsonSerializerOptions { WriteIndented = true };
+				var options = new JsonSerializerOptions
+				{
+					Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+					WriteIndented = true
+				};
+
 				string newJsonString = JsonSerializer.Serialize(settings, options);
 				File.WriteAllText(ConfigFileName, newJsonString);
 
@@ -62,7 +70,7 @@ namespace MOGI
 
 			foreach (var itemName in configItems)
 			{
-				if (assetManager.ItemTemplateNames.Contains(itemName) && !buttonNames.Contains(itemName))
+				if (assetManager.ItemTemplates.Keys.Contains(itemName) && !buttonNames.Contains(itemName))
 				{
 					validItems.Add(itemName);
 				}

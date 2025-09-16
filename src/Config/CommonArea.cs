@@ -1,11 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using MOGI; // CommonEnum.cs의 enum들을 사용하기 위해 네임스페이스 명시
-
-namespace MOGI
+﻿namespace MOGI
 {
 	public static class CommonArea
 	{
@@ -38,7 +31,6 @@ namespace MOGI
 			{ WoodType.Thick, new Rectangle(697, 565, 170, 25) },
 			{ WoodType.Usable, new Rectangle(690, 620, 170, 25) },
 
-			//얼음 필요없음
 			{ MineralType.Ore, new Rectangle(690, 620, 170, 25) },
 			{ MineralType.Coal, new Rectangle(690, 620, 170, 25) },
 			{ MineralType.Iron, new Rectangle(690, 620, 170, 25) },
@@ -60,6 +52,12 @@ namespace MOGI
 				{ AreaType.LocationMove, new Rectangle(690, 600, 170, 25) },
 				{ AreaType.Skip, new Rectangle(1700, 35, 150, 40) },
 				{ AreaType.Open, new Rectangle(1064, 960, 150, 60) },
+			});
+
+			RegisterAreaMap(new Dictionary<SearchAreaType, Rectangle>
+			{
+				{ SearchAreaType.InventoryGrid, new Rectangle(1040, 170, 790, 900) },
+				{ SearchAreaType.TopMenu, new Rectangle(1500,0 , 160 ,380) }
 			});
 
 			RegisterKeyMaps();

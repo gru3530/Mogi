@@ -1,8 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Drawing;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 using static MOGI.TaskDefinition;
 
 namespace MOGI
